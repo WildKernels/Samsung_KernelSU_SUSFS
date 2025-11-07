@@ -76,7 +76,7 @@ jobs:
 
       - name: Add KernelSU
         run: |
-          cd "$CONFIG"
+          cd "$CONFIG/kernel_platform/common"
           curl -LSs "https://raw.githubusercontent.com/WildKernels/Wild_KSU/wild/kernel/setup.sh" | bash -s wild
 
       - name: Getting KernelSU Version
@@ -94,12 +94,12 @@ jobs:
           # Apply compatibility fixes
           SUSFS_VERSION="1.5.12"
 
-          cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
-          cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
+          cp ../susfs4ksu/kernel_patches/fs/* ./kernel_platform/common/fs/
+          cp ../susfs4ksu/kernel_patches/include/linux/* ./kernel_platform/common/include/linux/
 
           # Apply core SUSFS patches
-          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./common/
-          cd common
+          cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ inputs.android_version }}-${{ inputs.kernel_version }}.patch ./kernel_platform/common/
+          cd kernel_platform/common
 
           # Pre-SUSFS sed safeguards removed; moved below core patch
 
