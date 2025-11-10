@@ -144,7 +144,7 @@ jobs:
         run: |
           cd "$CONFIG/kernel_platform/common"
           cp ../../../kernel_patches/wild/hooks/scope_min_manual_hooks_v1.4.patch ./
-          patch -p1 -F 3 < scope_min_manual_hooks_v1.4.patch
+          patch -p1 < scope_min_manual_hooks_v1.4.patch
           patch -p1 < fix_exec.patch
 
       - name: Add BBG
