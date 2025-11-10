@@ -120,6 +120,10 @@ jobs:
             cp ../../../kernel_patches/samsung/${{ inputs.branch }}/* ./
             patch -p1 < fix_namespace.patch
             patch -p1 < fix_base.patch
+          elif [[ "${{ inputs.branch }}" == "SM-F946N" ]]; then
+            cp ../../../kernel_patches/samsung/${{ inputs.branch }}/* ./
+            patch -p1 < fix_namespace.patch
+            patch -p1 < fix_base.patch
           fi
 
           # Apply KSU integration patches
@@ -204,26 +208,31 @@ jobs:
           #fi
 
           if [[ "${{ inputs.branch }}" == "SM-S928B-Oneui7" || "${{ inputs.branch }}" == "SM-S928B-Oneui8" ]]; then
-            cp ./kernel_platform/sec/dist/Image AnyKernel3/
+            cp ./kernel_platform/sec/dist/Image AnyKernel3
           elif [[ "${{ inputs.branch }}" == "SM-A366B" ]]; then
             cp ./kernel_platform/gki/dist/Image AnyKernel3
-          elif [[ "${{ inputs.branch }}" == "SM-A546B" ]]; then
-            cp ../../../kernel_patches/samsung/${{ inputs.branch }}/* ./
+          elif [[ "${{ inputs.branch }}" == "SM-X916B" ]]; then
+            cp ./kernel_platform/sec/dist/Image AnyKernel3
+          elif [[ "${{ inputs.branch }}" == "SM-F946N" ]]; then
+            cp ./kernel_platform/sec/dist/Image AnyKernel3
+          else
+            echo "Error: Image file not found in any expected location"
+            exit 1
           fi
 
       - name: Create Bootimgs Folder and Copy Images for Android 14/15
         if: ${{ inputs.android_version == 'android14' || inputs.android_version == 'android15' }}
         run: |
-          mkdir bootimgs
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image ./bootimgs
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image.lz4 ./bootimgs
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image ./${{ env.FILE_NAME }}-Image
-          cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image.lz4 ./${{ env.FILE_NAME }}-Image.lz4
+          #mkdir bootimgs
+          #cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image ./bootimgs
+          #cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image.lz4 ./bootimgs
+          #cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image ./${{ env.FILE_NAME }}-Image
+          #cp ./$CONFIG/bazel-bin/common/kernel_aarch64/Image.lz4 ./${{ env.FILE_NAME }}-Image.lz4
 
           # Create gzip of the Image file
-          gzip -n -k -f -9 ./${{ env.FILE_NAME }}-Image > ./${{ env.FILE_NAME }}-Image.gz
-          gzip -n -k -f -9 ./bootimgs/Image > ./bootimgs/Image.gz
-          cp ./boot-lz4.img ../${{ env.FILE_NAME }}-boot-lz4.img
+          #gzip -n -k -f -9 ./${{ env.FILE_NAME }}-Image > ./${{ env.FILE_NAME }}-Image.gz
+          #gzip -n -k -f -9 ./bootimgs/Image > ./bootimgs/Image.gz
+          #cp ./boot-lz4.img ../${{ env.FILE_NAME }}-boot-lz4.img
 
       - name: Upload AnyKernel3 Artifacts
         id: upload_ak3
