@@ -88,6 +88,11 @@ jobs:
           COMMIT_COUNT=$(/usr/bin/git rev-list --count HEAD)
           KSU_VERSION=$(expr $COMMIT_COUNT "+" $BASE_VERSION)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+          
+          # change KSU version in makefile, scamsung things
+          MAKEFILE="Makefile"
+          sed -i "s/ccflags-y += -DKSU_VERSION=[0-9]\+/ccflags-y += -DKSU_VERSION=${KSU_VERSION}/" "$MAKEFILE"
+          echo "✅ Updated KSU version to ${KSU_VERSION} in $MAKEFILE"
 
       - name: Apply SUSFS Patches for KernelSU Variants
         run: |
@@ -144,8 +149,13 @@ jobs:
         run: |
           cd "$CONFIG/kernel_platform/common"
           cp ../../../kernel_patches/wild/hooks/scope_min_manual_hooks_v1.4.patch ./
-          patch -p1 < scope_min_manual_hooks_v1.4.patch || true
-          patch -p1 < fix_exec.patch
+          
+          if [[ "${{ inputs.branch }}" == "SM-A366B" ]]; then
+           patch -p1 < scope_min_manual_hooks_v1.4.patch || true
+          else
+           patch -p1 < scope_min_manual_hooks_v1.4.patch || true
+           patch -p1 < fix_exec.patch
+          fi
 
       - name: Add BBG
         run: |
@@ -194,6 +204,11 @@ jobs:
           cd "$CONFIG"
           chmod +x build_kernel_GKI.sh
           echo "Building the kernel..."
+          if [[ "${{ inputs.branch }}" == "SM-S928B-Oneui7" || "${{ inputs.branch }}" == "SM-S928B-Oneui8" ]]; then
+          # default LTO for bazel kernels
+          ./build_kernel_GKI.sh
+          else
+          # LTO thin for kernels NOT using bazel
           LTO=thin ./build_kernel_GKI.sh
           
       - name: Prepare AnyKernel3
