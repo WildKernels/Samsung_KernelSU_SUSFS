@@ -205,11 +205,12 @@ jobs:
           chmod +x build_kernel_GKI.sh
           echo "Building the kernel..."
           if [[ "${{ inputs.branch }}" == "SM-S928B-Oneui7" || "${{ inputs.branch }}" == "SM-S928B-Oneui8" ]]; then
-          # default LTO for bazel kernels
-          ./build_kernel_GKI.sh
+           # default LTO for bazel kernels
+           ./build_kernel_GKI.sh
           else
-          # LTO thin for kernels NOT using bazel
-          LTO=thin ./build_kernel_GKI.sh
+           # LTO thin for kernels NOT using bazel
+           LTO=thin ./build_kernel_GKI.sh
+          fi
           
       - name: Prepare AnyKernel3
         run: |
