@@ -214,7 +214,7 @@ jobs:
             ./build_kernel_GKI.sh
           else
             #temporarily using this until i can figure out the other phones build script issues
-            cd "$CONFIG/kernel_platform"
+            cd kernel_platform
             tools/bazel build --config=fast --lto=thin //common:kernel_aarch64_dist || exit 1
           fi
           
