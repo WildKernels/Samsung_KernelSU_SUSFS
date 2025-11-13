@@ -211,10 +211,11 @@ jobs:
           chmod +x build_kernel_GKI.sh
           echo "Building the kernel..."
           if [[ "${{ inputs.branch }}" == "SM-S928B-Oneui7" || "${{ inputs.branch }}" == "SM-S928B-Oneui8" ]]; then
-           ./build_kernel_GKI.sh
+            ./build_kernel_GKI.sh
           else
-          #temporarily using this until i can figure out the other phones build script issues
-           tools/bazel build --config=fast --lto=thin //common:kernel_aarch64_dist ||
+            #temporarily using this until i can figure out the other phones build script issues
+            cd "$CONFIG/kernel_platform"
+            tools/bazel build --config=fast --lto=thin //common:kernel_aarch64_dist || exit 1
           fi
           
       - name: Prepare AnyKernel3
