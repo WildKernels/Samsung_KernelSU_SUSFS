@@ -1,0 +1,135 @@
+name: 🔨 Build Samsung S23 Ultra Kernel
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build Type'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - full
+          - kernel-only
+          - modules-only
+
+jobs:
+  build-kernel:
+    name: Build S918B Kernel with BBRv3
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: S918B-OneUI8-Android16-BBRv3-Enhanced
+          fetch-depth: 0
+
+      - name: 📦 Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            python3 python3-dev \
+            git \
+            curl wget \
+            flex bison \
+            libssl-dev libelf-dev \
+            bc pahole \
+            crossbuild-essential-arm64 \
+            device-tree-compiler \
+            u-boot-tools \
+            zip
+
+      - name: 🔧 Setup build environment
+        run: |
+          chmod +x *.sh
+          source build_config.sh
+          echo "Build Configuration Loaded"
+          echo "Device: $DEVICE_MODEL"
+          echo "Kernel: $KERNEL_VERSION"
+          echo "Android: $ANDROID_VERSION"
+
+      - name: 📝 Load build configuration
+        run: source build_config.sh
+
+      - name: 🏗️ Build Kernel
+        run: |
+          echo "================================"
+          echo "Starting Kernel Build..."
+          echo "================================"
+          ./build.sh 2>&1 | tee build_output.log
+          
+      - name: 📊 Generate Build Report
+        if: always()
+        run: |
+          echo "================================"
+          echo "Build Report"
+          echo "================================"
+          echo "Build Status: $?"
+          echo ""
+          echo "Output Files:"
+          ls -lh out/*.zip 2>/dev/null || echo "No ZIP files found"
+          ls -lh out/arch/arm64/boot/Image.gz 2>/dev/null || echo "No kernel image found"
+          echo ""
+          echo "Build Log (Last 50 lines):"
+          tail -50 build_output.log
+
+      - name: 📤 Upload Build Artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: S918B-Kernel-Build-${{ github.run_id }}
+          path: |
+            out/arch/arm64/boot/Image.gz
+            out/*.zip
+            BUILD_INFO.txt
+            build_output.log
+          retention-days: 30
+
+      - name: 📄 Create Release Notes
+        if: success()
+        run: |
+          cat > RELEASE_NOTES.md << 'EOF'
+          # Samsung Galaxy S23 Ultra Kernel Build
+          
+          ## Build Information
+          - **Device**: Samsung Galaxy S23 Ultra (SM-S918B)
+          - **Kernel**: 5.15.178-android13-8
+          - **Android**: 16 with OneUI 8.x
+          - **Build Date**: $(date)
+          - **Build Number**: ${{ github.run_id }}
+          
+          ## Features Included
+          - ✅ KernelSU (Root Access)
+          - ✅ SUSFS (Root Hiding)
+          - ✅ BBRv3 (Advanced TCP Congestion Control)
+          - ✅ Baseband Guard (Security)
+          - ✅ LTO (Link Time Optimization)
+          - ✅ TMPFS XATTR (Extended Attributes)
+          - ✅ Droidspaces (Linux Containers)
+          - ✅ NTSync (Windows NT Sync)
+          
+          ## Installation
+          1. Download the kernel image
+          2. Flash using Heimdall or Odin
+          3. Reboot device
+          4. Verify: `adb shell uname -r`
+          
+          ## Support
+          - GitHub: https://github.com/ozon1985/Samsung_KernelSU_SUSFS
+          - Issues: Report on GitHub Issues
+          
+          **Disclaimer**: Flashing voids warranty. Use at your own risk!
+          EOF
+          cat RELEASE_NOTES.md
+
+      - name: ✅ Build Completed
+        run: |
+          echo "================================"
+          echo "✅ BUILD COMPLETED SUCCESSFULLY"
+          echo "================================"
+          echo ""
+          echo "Kernel built and ready for flashing!"
+          echo "Check Artifacts for download"
