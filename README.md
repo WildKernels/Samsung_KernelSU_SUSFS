@@ -22,17 +22,18 @@ Samsung kernels built on [Samsung's sources](https://github.com/WildKernels/mani
 
 ## Features
 
-- **KernelSU / KernelSU-Next / ReSukiSU** — selectable root implementations (pinned commits; Next tracks latest for SUSFS API match)
-- **susfs4ksu** — root hiding (incl. Ptrace Leak Fix, Unicode Fix) — pinned per Android/kernel-version, branch-tip for Next
-- **NoMount / ZeroMount** — mount metamodule variants
+- **KernelSU / KernelSU-Next / ReSukiSU** — root implementations
+- **susfs4ksu** — root hiding (incl. Ptrace Leak Fix, Unicode Fix)
+- **NoMount / Mountify** — mount metamodules
 - **Baseband Guard** — partition protection
-- **Networking** — BBRv3, IPSet, IPv6 NAT, TTL/HL target
-- **Filesystem** — OverlayFS, TMPFS xattr / POSIX ACL, KPM
-- **Performance** — NTSync, build optimizations, LTO per kernel
+- **Networking** — WireGuard, BBR, IPSet, CIFS
+- **TMPFS** — xattr / POSIX ACLs
+- **BPF** — BTF / eBPF / FUSE-BPF
+- **Performance** — incl. NTSync
 - **DroidSpaces** — container runtime
 
 > [!TIP]
-> Full per-feature documentation: [GKI docs/features.md](https://github.com/WildKernels/GKI_KernelSU_SUSFS/blob/dev/docs/features.md) — networking/filesystem features trimmed to what Samsung sources actually enable.
+> Full documentation: [docs/features.md](https://github.com/WildKernels/GKI_KernelSU_SUSFS/blob/main/docs/features.md)
 
 ---
 
