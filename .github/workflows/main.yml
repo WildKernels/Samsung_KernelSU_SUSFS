@@ -48,69 +48,9 @@ on:
         default: All
 
       device:
-        description: "Device branch (All = all devices)"
-        type: choice
-        options:
-          - All
-          - SM-S938B-Oneui8.5
-          - SM-S938B-Oneui7
-          - SM-S931B-Oneui8.5
-          - SM-S931B-Oneui8
-          - SM-A055M-Oneui7
-          - SM-A055F-Oneui7
-          - SM-S928B-Oneui8.5
-          - SM-S928B-Oneui8-bit4
-          - SM-S928B-Oneui8-bit5
-          - SM-S928B-Oneui7
-          - SM-S928B-Oneui6.1
-          - SM-A556B-Oneui7-bitA
-          - SM-A556E-Oneui7-bitA
-          - SM-S926B-Oneui8.5
-          - SM-S926B-Oneui8
-          - SM-S926B-Oneui7-bit7
-          - SM-S926B-Oneui7-bit8
-          - SM-S926B-Oneui7-bit9
-          - SM-X926B-Oneui6.1
-          - SM-F741B-Oneui8
-          - SM-F731B-Oneui6
-          - SM-F731B-Oneui7
-          - SM-F731B-Oneui8
-          - SM-F731B-Oneui8.5
-          - SM-A546B-Oneui7
-          - SM-A546B-Oneui8
-          - SM-A546B-Oneui6.0
-          - SM-A546E-Oneui7
-          - SM-A546E-Oneui8
-          - SM-A166B-Oneui7
-          - SM-A057M-Oneui7
-          - SM-X710-Oneui6.1.1
-          - SM-X916B
-          - SM-F946N-Oneui7
-          - SM-F946B-Oneui8
-          - SM-S916B-Oneui8
-          - SM-S918B-Oneui8
-          - SM-S918B-Oneui8.5
-          - SM-S9180-Oneui6.1
-          - SM-S918B-Oneui7
-          - SM-M146B-Oneui7-ADYJ2
-          - SM-S911B-Oneui8.5
-          - SM-S911B-Oneui8-bit8
-          - SM-S911B-Oneui8
-          - SM-S911B-Oneui7
-          - SM-S911B-Oneui6.1-bit7
-          - SM-S911B-Oneui6.1-bit8
-          - SM-X610-Oneui6.1.1-bit7
-          - SM-X800-Oneui8
-          - SM-S908E-Oneui8
-          - SM-S901E-Oneui8
-          - SM-M556B-Oneui8
-          - SM-S908B-Oneui8-bitK
-          - SM-A075M-Oneui7
-          - SM-S906E-Oneui8
-          - SM-X610-Oneui7
-          - SM-A356E-Oneui8
-          - SM-A356E-Oneui8.5
-          - SM-S711B-Oneui8.5
+        description: "Branch - All or e.g. SM-S938B-Oneui8.5 - branches: https://github.com/WildKernels/Samsung_Kernels/branches"
+        required: false
+        type: string
         default: All
 
       susfs:
