@@ -92,7 +92,7 @@ Have an idea or improvement in mind? Contributions are always welcome — feel f
 
 </div>
 
-Need help? Open an issue in this repository or reach out on Telegram. Please ask in the [WildKernelsTG group](https://t.me/WildKernelsTG) first for general issues. DMs to [@Jimsterino98](https://t.me/Jimsterino98) are always open.
+Need help? Open an issue in this repository or reach out on Telegram. Please ask in the [WildKernelsTG group](https://t.me/WildKernelsTG) first for general issues.
 
 ---
 
