@@ -26,9 +26,8 @@ Samsung kernels built on [Samsung's sources](https://github.com/WildKernels/mani
 - **susfs4ksu** — root hiding (incl. Ptrace Leak Fix, Unicode Fix)
 - **NoMount / Mountify** — mount metamodules
 - **Baseband Guard** — partition protection
-- **Networking** — WireGuard, BBR, IPSet, CIFS
+- **Networking** — BBR, IPSet
 - **TMPFS** — xattr / POSIX ACLs
-- **BPF** — BTF / eBPF / FUSE-BPF
 - **Performance** — incl. NTSync
 - **DroidSpaces** — container runtime
 
