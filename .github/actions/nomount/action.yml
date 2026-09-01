@@ -1,6 +1,10 @@
 name: add nomount
 description: add and configure nomount
-
+inputs:
+  commit:
+    description: 'pinned nomount commit'
+    required: false
+    default: ""
 runs:
   using: composite
   steps:
@@ -8,8 +12,14 @@ runs:
      shell: bash
      run: |
       cd "$COMMON"
-      curl https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/dev/kernel/setup.sh | bash -
-
+      if [ -n "${{ inputs.commit }}" ]; then
+        git clone --no-checkout https://github.com/maxsteeel/nomount.git /tmp/nomount
+        git -C /tmp/nomount fetch --depth=1 origin "${{ inputs.commit }}"
+        git -C /tmp/nomount checkout "${{ inputs.commit }}"
+        bash /tmp/nomount/kernel/setup.sh || bash -c "curl -fsSL https://raw.githubusercontent.com/maxsteeel/nomount/${{ inputs.commit }}/kernel/setup.sh | bash -"
+      else
+        curl https://raw.githubusercontent.com/maxsteeel/nomount/refs/heads/dev/kernel/setup.sh | bash -
+      fi
    - name: add to defconfig
      shell: bash
      run: |

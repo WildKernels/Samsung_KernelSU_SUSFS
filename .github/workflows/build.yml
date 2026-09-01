@@ -12,6 +12,55 @@ on:
       build_type:
         required: false
         type: string
+      root_flavor:
+        description: "next / kernelsu / resukisu"
+        required: false
+        type: string
+        default: "next"
+      root_commit:
+        required: false
+        type: string
+        default: ""
+      variant:
+        required: false
+        type: string
+        default: ""
+      susfs_commit:
+        required: false
+        type: string
+        default: ""
+      susfs_commit_android12_5_10:
+        required: false
+        type: string
+        default: ""
+      susfs_commit_android13_5_10:
+        required: false
+        type: string
+        default: ""
+      susfs_commit_android13_5_15:
+        required: false
+        type: string
+        default: ""
+      susfs_commit_android14_5_15:
+        required: false
+        type: string
+        default: ""
+      susfs_commit_android14_6_1:
+        required: false
+        type: string
+        default: ""
+      susfs_commit_android15_6_6:
+        required: false
+        type: string
+        default: ""
+      susfs_commit_android16_6_12:
+        required: false
+        type: string
+        default: ""
+      nomount_commit:
+        required: false
+        type: string
+        default: ""
       susfs:
         required: true
         type: string
@@ -25,9 +74,6 @@ on:
         required: true
         type: string
       nomount:
-        required: true
-        type: string
-      ksun:
         required: true
         type: string
       droidspace:
@@ -57,7 +103,7 @@ on:
 
 jobs:
   build-samsung-gki:
-    name: "${{ inputs.branch }}"
+    name: "${{ inputs.branch }} (${{ inputs.variant || inputs.root_flavor }})"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -82,7 +128,7 @@ jobs:
         
       - name: Free Disk Space
         if: true
-        uses: endersonmenezes/free-disk-space@v3  # Use @main for latest, @v3 for stable
+        uses: endersonmenezes/free-disk-space@v3
         with:
           remove_android: true
           remove_dotnet: true
@@ -92,35 +138,18 @@ jobs:
           remove_packages: "azure-cli google-cloud-cli microsoft-edge-stable google-chrome-stable firefox postgresql* temurin-* *llvm* mysql* dotnet-sdk-*"
           remove_packages_one_command: true
           remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/lib/node_modules /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/local/aws-sam-cli /usr/share/gradle"
-          rm_cmd: "rmz"  # Use 'rmz' for faster deletion (default: 'rm')
-          rmz_version: "3.1.1"  # Required when rm_cmd is 'rmz'
+          rm_cmd: "rmz"
+          rmz_version: "3.1.1"
           testing: false
 
       - name: Setup more Swap (for LTO)
-        uses: pierotofy/set-swap-space@master # or thejerrybao/setup-swap-space@v1
+        uses: pierotofy/set-swap-space@master
         with:
-          swap-size-gb: 25          # 10-24 GB is common for heavy LTO
-        # swap-space-path: /mnt/swapfile   # optional
+          swap-size-gb: 25
 
       - name: Parse branch for cache keys
         if: inputs.cache == 'true' && inputs.build_type == 'make'
         uses: ./.github/actions/parse-branch
-
-#      - name: set up bazel cache dir
-#        if: inputs.build_type == 'Bazel' && inputs.cache == 'true'
-#        run: |
-#          BCACHE_DIR="${{ github.workspace }}/.cache/bazel-disk-kernel"
-#          mkdir -p "$BCACHE_DIR"
-#          echo "BCACHE_DIR=$BCACHE_DIR" >> $GITHUB_ENV
-
- #     - name: set up bazel cache
- #       if: inputs.build_type == 'Bazel' && inputs.cache == 'true'
- #       uses: actions/cache@v6
- #       with:
- #        path: ${{ env.BCACHE_DIR }}
- #        key: bcache-${{ runner.os }}-${{ inputs.build_type }}-${{ env.FULL_BRANCH }}
- #        restore-keys: |
- #           bcache-${{ runner.os }}-${{ inputs.build_type }}-${{ env.FULL_BRANCH }}
 
       - name: Install ccache
         if: inputs.cache == 'true' && inputs.build_type == 'make'
@@ -166,9 +195,10 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ runner.os }}-${{ inputs.build_type }}-${{ env.BASE_BRANCH }}
+          key: ccache-${{ runner.os }}-${{ inputs.build_type }}-${{ env.BASE_BRANCH }}-${{ inputs.root_flavor }}-${{ inputs.variant }}
           restore-keys: |
-            ccache-${{ runner.os }}-${{ inputs.build_type }}-${{ env.BASE_BRANCH }}
+            ccache-${{ runner.os }}-${{ inputs.build_type }}-${{ env.BASE_BRANCH }}-${{ inputs.root_flavor }}-
+            ccache-${{ runner.os }}-${{ inputs.build_type }}-${{ env.BASE_BRANCH }}-
             ccache-${{ runner.os }}-${{ inputs.build_type }}-
             
       - name: Ensure ccache is used
@@ -180,10 +210,7 @@ jobs:
         
       - name: Set CONFIG Environment Variable
         run: |
-          # Set CONFIG dynamically based on inputs values
           CONFIG="$BRANCH-$ANDROID_VERSION_$KERNEL_VERSION"
-
-          # Set CONFIG as an environment variable for future steps
           echo "CONFIG=$CONFIG" >> $GITHUB_ENV
 
       - name: dependencies
@@ -198,24 +225,77 @@ jobs:
       - name: Extract all tar.xz files and delete them
         run: |
           cd "$CONFIG"
-
           find . -type f -name '*.tar.xz' -print0 | while IFS= read -r -d '' file; do
             echo "Extracting $file"
             tar -xf "$file"
             rm "$file"
           done
 
-      - name: Add KernelSU-Next
-        if: inputs.ksun == 'true'
-        uses: ./.github/actions/ksun
+      - name: Setup Selected Root Implementation
+        if: inputs.root_flavor != ''
+        uses: ./.github/actions/root-setup
         with:
-          susfs: ${{ inputs.susfs }}
-        
+          flavor: ${{ inputs.root_flavor }}
+          commit: ${{ inputs.root_commit }}
+
+      - name: Disable SUSFS for ReSukiSU without SUSFS feature
+        if: inputs.root_flavor == 'resukisu' && inputs.susfs != 'true'
+        run: |
+          "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --disable CONFIG_KSU_SUSFS || true
+          echo "Disabled SUSFS for resukisu without SUSFS"
+
+      - name: Resolve SUSFS commit
+        id: susfs-cm
+        if: inputs.susfs == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          # KernelSU-Next (next) always uses latest tip so SUSFS stays API-matched.
+          # Other flavors use pinned verified commit per kernel version.
+          # We receive all per-version pins from kernel-samsung.yml inputs.
+          KVER="$KERNEL_VER"
+          AVER="$ANDROID_VERSION"
+          echo "KERNEL_VER=$KVER ANDROID_VER=$AVER root_flavor=${{ inputs.root_flavor }}"
+
+          pick_pin() {
+            case "$KVER" in
+              5.10) if [ "$AVER" = "android12" ]; then echo "${{ inputs.susfs_commit_android12_5_10 }}"; else echo "${{ inputs.susfs_commit_android13_5_10 }}"; fi ;;
+              5.15) if [ "$AVER" = "android14" ]; then echo "${{ inputs.susfs_commit_android14_5_15 }}"; else echo "${{ inputs.susfs_commit_android13_5_15 }}"; fi ;;
+              6.1) echo "${{ inputs.susfs_commit_android14_6_1 }}" ;;
+              6.6) echo "${{ inputs.susfs_commit_android15_6_6 }}" ;;
+              6.12) echo "${{ inputs.susfs_commit_android16_6_12 }}" ;;
+              *) echo "${{ inputs.susfs_commit }}" ;;
+            esac
+          }
+
+          if [ "${{ inputs.root_flavor }}" = "next" ]; then
+            BRANCH="gki-${AVER}-${KVER}"
+            # try android version fallback if branch missing
+            SUSFS_COMMIT="$(git ls-remote https://gitlab.com/simonpunk/susfs4ksu.git "refs/heads/${BRANCH}" | cut -f1)"
+            if [ -z "$SUSFS_COMMIT" ]; then
+              # fallback to generic gki branch
+              for b in "gki-android12-5.10" "gki-android13-5.15" "gki-android14-6.1" "gki-android15-6.6"; do
+                SUSFS_COMMIT="$(git ls-remote https://gitlab.com/simonpunk/susfs4ksu.git "refs/heads/${b}" | cut -f1 || true)"
+                [ -n "$SUSFS_COMMIT" ] && break
+              done
+            fi
+            # last resort: use pinned
+            if [ -z "$SUSFS_COMMIT" ]; then SUSFS_COMMIT="$(pick_pin)"; fi
+            echo "KernelSU-Next: resolving SUSFS at latest on ${BRANCH} -> ${SUSFS_COMMIT}"
+          else
+            SUSFS_COMMIT="$(pick_pin)"
+            if [ -z "$SUSFS_COMMIT" ]; then SUSFS_COMMIT="${{ inputs.susfs_commit }}"; fi
+            echo "Using pinned SUSFS commit: ${SUSFS_COMMIT}"
+          fi
+          echo "commit=${SUSFS_COMMIT}" >> "$GITHUB_OUTPUT"
+          echo "SUSFS_COMMIT=${SUSFS_COMMIT}" >> "$GITHUB_ENV"
+
       - name: Add SUSFS
         if: inputs.susfs == 'true'
         uses: ./.github/actions/susfs-patches
         with:
           nomount: ${{ inputs.nomount }}
+          susfs_commit: ${{ steps.susfs-cm.outputs.commit }}
 
       - name: Add Zeromount
         if: inputs.susfs == 'true' && inputs.zeromount == 'true'
@@ -224,6 +304,8 @@ jobs:
       - name: add nomount
         if: inputs.nomount == 'true'
         uses: ./.github/actions/nomount
+        with:
+          commit: ${{ inputs.nomount_commit }}
 
       - name: Add BBG
         if: inputs.bbg == 'true'
@@ -266,7 +348,6 @@ jobs:
         uses: ./.github/actions/m55-fix
 
       - name: Set Kernel Configuration Variables
-        if: inputs.ksun == 'true'
         uses: ./.github/actions/configs
          
       - name: Change Kernel Name and clean dirty
@@ -276,10 +357,11 @@ jobs:
         uses: ./.github/actions/abi-export
         
       - name: Set file name
-        if: inputs.ksun == 'true'
         uses: ./.github/actions/file-name
         with:
-         ksun: ${{ inputs.ksun }}
+         root_flavor: ${{ inputs.root_flavor }}
+         variant: ${{ inputs.variant }}
+         ksun: "true"
          susfs: ${{ inputs.susfs }}
          zeromount: ${{ inputs.zeromount }}
          nomount: ${{ inputs.nomount }}
@@ -290,11 +372,7 @@ jobs:
          ipv6_nat: ${{ inputs.ipv6_nat }}
          ttl: ${{ inputs.ttl }}
          unicodefix: ${{ inputs.unicodefix }}
-         
-
-#      - name: ensure bazel cache is set to be used
-#        if: inputs.build_type == 'Bazel' && inputs.cache == 'true'
-#        uses: ./.github/actions/use-bazcache
+          
 
       - name: change variables to ccache
         if: inputs.cache == 'true' && inputs.build_type == 'make'
@@ -315,10 +393,6 @@ jobs:
       - name: ccache stats
         if: inputs.cache == 'true' && inputs.build_type == 'make'
         run: ccache -s -v || ccache -s
-
-#      - name: bazel cache stats
-#        if: inputs.cache == 'true' && inputs.build_type == 'Bazel'
-#        run: bazel analyze-profile profile.json
           
       - name: Prepare AnyKernel3
         uses: ./.github/actions/ak3zip-prep
@@ -339,19 +413,16 @@ jobs:
           CONFIG_DIR="$CONFIG"
           REJECTS_DIR="$GITHUB_WORKSPACE/patch-rejects"
           mkdir -p "$REJECTS_DIR"
-          # Find all .rej files under the configuration directory
           mapfile -t REJS < <(find "$CONFIG_DIR" -type f -name '*.rej')
           REJ_COUNT=${#REJS[@]}
           echo "Found $REJ_COUNT .rej files under $CONFIG_DIR"
           echo "REJ_COUNT=$REJ_COUNT" >> $GITHUB_ENV
           if [ "$REJ_COUNT" -gt 0 ]; then
             for REJ in "${REJS[@]}"; do
-              # Relative path from $CONFIG
               REL="${REJ#"$CONFIG_DIR"/}"
               DEST="$REJECTS_DIR/$REL"
               mkdir -p "$(dirname "$DEST")"
               cp "$REJ" "$DEST"
-              # Copy the associated original file alongside the .rej
               ORIG="${REJ%.rej}"
               if [ -f "$ORIG" ]; then
                 ORIG_DEST="$REJECTS_DIR/${REL%.rej}"
@@ -365,95 +436,53 @@ jobs:
       - name: Generate Build Summary
         if: ${{ always() }}
         run: |
-          # Create build summary file for inclusion in Misc artifact
           echo "# Kernel Build Summary" > build_summary.md
-          
-          # Add build variant header
           echo "## ${{ env.FILE_NAME }}" >> build_summary.md
-          
-          # Add build info
           echo "## Build Information" >> build_summary.md
-          echo "- **Android Version**: ${{ inputs.android_version }}" >> build_summary.md
-          echo "- **Kernel Version**: ${{ inputs.kernel_version }}.${{ inputs.sub_level }}" >> build_summary.md
+          echo "- **Branch**: ${{ inputs.branch }}" >> build_summary.md
+          echo "- **Root**: ${{ inputs.variant || inputs.root_flavor }} @ ${{ inputs.root_commit }}" >> build_summary.md
+          echo "- **Kernel Version**: ${{ env.KERNEL_VER }}" >> build_summary.md
+          echo "- **Android Version**: ${{ env.ANDROID_VER }}" >> build_summary.md
+          echo "- **SUSFS**: ${{ env.SUSFS_COMMIT || 'disabled' }}" >> build_summary.md
           echo "- **BBG**: Installed" >> build_summary.md
           echo "" >> build_summary.md
 
-          # Get KernelSU-Next commit
           if [ -d "$CONFIG/KernelSU-Next" ]; then
             cd "$CONFIG/KernelSU-Next"
-            KSUN_COMMIT=$(git rev-parse HEAD)
-            KSUN_URL="https://github.com/WildKernels/KernelSU-Next/commit/$KSUN_COMMIT"
-            echo "- **KernelSU-Next**: [$KSUN_COMMIT]($KSUN_URL)" >> "$GITHUB_WORKSPACE/build_summary.md"
+            KSUN_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+            echo "- **KernelSU-Next**: $KSUN_COMMIT" >> "$GITHUB_WORKSPACE/build_summary.md"
             cd "$GITHUB_WORKSPACE"
-          else
-            echo "- **KernelSU-Next**: not present" >> build_summary.md
+          elif [ -d "$CONFIG/KernelSU" ]; then
+            cd "$CONFIG/KernelSU"
+            KSU_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+            echo "- **KernelSU**: $KSU_COMMIT" >> "$GITHUB_WORKSPACE/build_summary.md"
+            cd "$GITHUB_WORKSPACE"
+          elif [ -d "$CONFIG/ReSukiSU" ]; then
+            cd "$CONFIG/ReSukiSU"
+            RS_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+            echo "- **ReSukiSU**: $RS_COMMIT" >> "$GITHUB_WORKSPACE/build_summary.md"
+            cd "$GITHUB_WORKSPACE"
           fi
           
-          # Get Baseband-guard commit
           if [ -d "$CONFIG/Baseband-guard" ]; then
             cd "$CONFIG/Baseband-guard"
             BBG_COMMIT=$(git rev-parse HEAD)
-            BBG_URL="https://github.com/vc-teahouse/Baseband-guard/commit/$BBG_COMMIT"
-            echo "- **Baseband-guard**: [$BBG_COMMIT]($BBG_URL)" >> "$GITHUB_WORKSPACE/build_summary.md"
+            echo "- **Baseband-guard**: $BBG_COMMIT" >> "$GITHUB_WORKSPACE/build_summary.md"
             cd "$GITHUB_WORKSPACE"
-          else
-            echo "- **Baseband-guard**: not present" >> build_summary.md
           fi
           
-          # Get SUSFS4KSU commit
           if [ -d "$GITHUB_WORKSPACE/susfs4ksu" ]; then
             cd "$GITHUB_WORKSPACE/susfs4ksu"
             SUSFS_COMMIT=$(git rev-parse HEAD)
-            SUSFS_URL="https://gitlab.com/simonpunk/susfs4ksu/-/commit/$SUSFS_COMMIT"
-            echo "- **SUSFS4KSU (v2.1.0)**: [$SUSFS_COMMIT]($SUSFS_URL)" >> "$GITHUB_WORKSPACE/build_summary.md"
+            echo "- **SUSFS4KSU**: $SUSFS_COMMIT" >> "$GITHUB_WORKSPACE/build_summary.md"
             cd "$GITHUB_WORKSPACE"
-          else
-            echo "- **SUSFS4KSU (v2.1.0)**: not present" >> build_summary.md
           fi
           echo "" >> build_summary.md
           
-          # Add artifact summary with presence verification
           echo "## Build Artifacts" >> build_summary.md
-
-          # Verify AnyKernel3 contents - check if kernel Image was actually copied (indicates successful build)
           if [ -d "AnyKernel3" ] && [ -f "AnyKernel3/Image" ]; then
             AK3_STATUS="✅"
           else
             AK3_STATUS="❌"
           fi
           echo "- **AnyKernel3**: $AK3_STATUS ${{ env.FILE_NAME }}-AnyKernel3" >> build_summary.md
-
-          echo "### Misc (uploaded files)" >> build_summary.md
-          FILES_PRESENT=0
-          for f in "${{ env.FILE_NAME }}-Image" "${{ env.FILE_NAME }}-Image.gz" "${{ env.FILE_NAME }}-Image.lz4" "${{ env.FILE_NAME }}-boot.img" "${{ env.FILE_NAME }}-boot-gz.img" "${{ env.FILE_NAME }}-boot-lz4.img"; do
-            if [ -f "$f" ]; then FILES_PRESENT=$((FILES_PRESENT+1)); fi
-          done
-          if [ "$FILES_PRESENT" -gt 0 ]; then
-            MISC_STATUS="✅"
-          else
-            MISC_STATUS="❌"
-          fi
-          echo "- **Set**: $MISC_STATUS ${{ env.FILE_NAME }}-Misc" >> build_summary.md
-          if [ "$MISC_STATUS" = "✅" ]; then
-            echo "  Included:" >> build_summary.md
-            for f in "${{ env.FILE_NAME }}-Image" "${{ env.FILE_NAME }}-Image.gz" "${{ env.FILE_NAME }}-Image.lz4" "${{ env.FILE_NAME }}-boot.img" "${{ env.FILE_NAME }}-boot-gz.img" "${{ env.FILE_NAME }}-boot-lz4.img"; do
-              if [ -f "$f" ]; then
-                echo "  - $f" >> build_summary.md
-              fi
-            done
-          fi
-
-          echo "### Diagnostics" >> build_summary.md
-          echo "- **Rejected Patches**: ${{ env.FILE_NAME }}-Rejected-Patches" >> build_summary.md
-          if [ -f patch-rejects/index.txt ]; then
-            if [ -s patch-rejects/index.txt ]; then
-              echo "  Rejected files:" >> build_summary.md
-              while IFS= read -r line; do
-                echo "    - $line" >> build_summary.md
-              done < patch-rejects/index.txt
-            else
-              echo "  Rejected file list is empty." >> build_summary.md
-            fi
-          else
-            echo "  No rejected patches found." >> build_summary.md
-          fi

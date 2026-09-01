@@ -27,11 +27,25 @@ on:
           - full
         default: default
 
-      ksun:
-        description: "KSUN"
+      commit_mode:
+        description: "latest = branch tips, verified = audited pins, update = build latest then promote verified pins on success"
         required: false
-        default: true
-        type: boolean
+        type: choice
+        options:
+          - latest
+          - verified
+          - update
+        default: verified
+
+      root_flavor:
+        description: "Root Flavor"
+        type: choice
+        options:
+          - KernelSU-Next
+          - KernelSU
+          - ReSukiSU
+          - All
+        default: All
 
       susfs:
         description: "SUSFS"
@@ -107,16 +121,166 @@ on:
 
 jobs:
 
+  resolve-sources:
+    runs-on: ubuntu-latest
+    outputs:
+      nomount_commit: ${{ steps.resolve.outputs.nomount_commit }}
+      kernelsu_commit: ${{ steps.resolve.outputs.kernelsu_commit }}
+      kernelsu_branch: ${{ steps.resolve.outputs.kernelsu_branch }}
+      root_flavor: ${{ steps.resolve.outputs.root_flavor }}
+      root_commit: ${{ steps.resolve.outputs.root_commit }}
+      root_matrix: ${{ steps.resolve.outputs.root_matrix }}
+      susfs_commit_android12_5_10: ${{ steps.resolve.outputs.susfs_commit_android12_5_10 }}
+      susfs_commit_android13_5_10: ${{ steps.resolve.outputs.susfs_commit_android13_5_10 }}
+      susfs_commit_android13_5_15: ${{ steps.resolve.outputs.susfs_commit_android13_5_15 }}
+      susfs_commit_android14_5_15: ${{ steps.resolve.outputs.susfs_commit_android14_5_15 }}
+      susfs_commit_android14_6_1: ${{ steps.resolve.outputs.susfs_commit_android14_6_1 }}
+      susfs_commit_android15_6_6: ${{ steps.resolve.outputs.susfs_commit_android15_6_6 }}
+      susfs_commit_android16_6_12: ${{ steps.resolve.outputs.susfs_commit_android16_6_12 }}
+      susfs_commit_android12_5_10_resukisu: ${{ steps.resolve.outputs.susfs_commit_android12_5_10_resukisu }}
+      susfs_commit_android13_5_10_resukisu: ${{ steps.resolve.outputs.susfs_commit_android13_5_10_resukisu }}
+      susfs_commit_android13_5_15_resukisu: ${{ steps.resolve.outputs.susfs_commit_android13_5_15_resukisu }}
+      susfs_commit_android14_5_15_resukisu: ${{ steps.resolve.outputs.susfs_commit_android14_5_15_resukisu }}
+      susfs_commit_android14_6_1_resukisu: ${{ steps.resolve.outputs.susfs_commit_android14_6_1_resukisu }}
+      susfs_commit_android15_6_6_resukisu: ${{ steps.resolve.outputs.susfs_commit_android15_6_6_resukisu }}
+      susfs_commit_android16_6_12_resukisu: ${{ steps.resolve.outputs.susfs_commit_android16_6_12_resukisu }}
+      ksu_commit: ${{ steps.resolve.outputs.ksu_commit }}
+      resukisu_commit: ${{ steps.resolve.outputs.resukisu_commit }}
+    steps:
+      - name: Resolve pinned component commits
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          COMMIT_MODE="${{ inputs.commit_mode }}"
+          echo "commit_mode=${COMMIT_MODE}"
+          retry() {
+            local n=0
+            until [ "$n" -ge 5 ]; do
+              "$@" && return 0
+              n=$((n+1))
+              echo "retry $n/5 failed for: $*" >&2
+              sleep 5
+            done
+            return 1
+          }
+          resolve_sha() { retry git ls-remote "$1" "$2" | awk '{print $1; exit}'; }
+          emit() {
+            if [ -z "$2" ] || ! [[ "$2" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "Failed to resolve $1 (got: ${2:-empty})" >&2
+              exit 1
+            fi
+            echo "$1=$2" >> "$GITHUB_OUTPUT"
+          }
+          # Audited pins - kept in sync with GKI_KernelSU_SUSFS dev
+          PIN_NOMOUNT="9a1431782f390453de54610fb91bdad03eab5b43"
+          PIN_KERNELSU="e38512f1255ea454d34cc2008d2ef7932547fad6"
+          PIN_RESUKISU="0b5efe9e0102c43ca5c41174d500f5a7080cd0c7"
+          declare -A PIN_SUSFS=(
+            [susfs_commit_android12_5_10]="ec785f47d49f7b3871ca9356f450411020af7017"
+            [susfs_commit_android13_5_10]="ed3d6d9c9a2652e1c70f153f5358701e996d646c"
+            [susfs_commit_android13_5_15]="bca0d2333c1a7d717e7278b019d7af7ba1d16005"
+            [susfs_commit_android14_5_15]="d54b51724afa912c4c99bb99731354ce934d1889"
+            [susfs_commit_android14_6_1]="4fc9c1898ea66f51847cdbc0d1473ea4ef525a70"
+            [susfs_commit_android15_6_6]="937215cb3a1b1f333d764c366c7a49972fa8e7a0"
+            [susfs_commit_android16_6_12]="7d91da2d2ce056d1abf378d9199aaf1072d37ab0"
+          )
+          declare -A PIN_SUSFS_RESUKISU=(
+            [susfs_commit_android12_5_10]="ec785f47d49f7b3871ca9356f450411020af7017"
+            [susfs_commit_android13_5_10]="ed3d6d9c9a2652e1c70f153f5358701e996d646c"
+            [susfs_commit_android13_5_15]="bca0d2333c1a7d717e7278b019d7af7ba1d16005"
+            [susfs_commit_android14_5_15]="d54b51724afa912c4c99bb99731354ce934d1889"
+            [susfs_commit_android14_6_1]="4fc9c1898ea66f51847cdbc0d1473ea4ef525a70"
+            [susfs_commit_android15_6_6]="937215cb3a1b1f333d764c366c7a49972fa8e7a0"
+            [susfs_commit_android16_6_12]="7d91da2d2ce056d1abf378d9199aaf1072d37ab0"
+          )
+          pick() {
+            local pinned="$1" repo="$2" ref="$3"
+            if [ "$COMMIT_MODE" = "verified" ] && [ -n "$pinned" ]; then
+              echo "$pinned"
+            else
+              resolve_sha "$repo" "$ref"
+            fi
+          }
+          emit nomount_commit "$(pick "$PIN_NOMOUNT" https://github.com/maxsteeel/nomount.git refs/heads/dev)"
+          emit kernelsu_commit "$(resolve_sha https://github.com/KernelSU-Next/KernelSU-Next.git refs/heads/dev)"
+          echo "kernelsu_branch=dev" >> "$GITHUB_OUTPUT"
+          KERNELSU_COMMIT="$(pick "$PIN_KERNELSU" https://github.com/tiann/KernelSU.git refs/heads/main)"
+          RESUKISU_COMMIT="$(pick "$PIN_RESUKISU" https://github.com/ReSukiSU/ReSukiSU.git refs/heads/main)"
+          emit ksu_commit "$KERNELSU_COMMIT"
+          emit resukisu_commit "$RESUKISU_COMMIT"
+          if [ "${{ inputs.susfs }}" = "true" ]; then
+            NEXT_COMMIT="$(resolve_sha https://github.com/pershoot/KernelSU-Next.git refs/heads/dev-susfs)"
+          else
+            NEXT_COMMIT="$(resolve_sha https://github.com/KernelSU-Next/KernelSU-Next.git refs/heads/dev)"
+          fi
+          mk_entry() { printf '{"root_flavor":"%s","variant":"%s","root_commit":"%s"}' "$1" "$2" "$3"; }
+          case "${{ inputs.root_flavor }}" in
+            KernelSU)
+              echo "root_flavor=kernelsu" >> "$GITHUB_OUTPUT"
+              emit root_commit "$KERNELSU_COMMIT"
+              ROOT_MATRIX="[$(mk_entry kernelsu KernelSU "$KERNELSU_COMMIT")]"
+              ;;
+            KernelSU-Next)
+              echo "root_flavor=next" >> "$GITHUB_OUTPUT"
+              emit root_commit "$NEXT_COMMIT"
+              ROOT_MATRIX="[$(mk_entry next KernelSU-Next "$NEXT_COMMIT")]"
+              ;;
+            ReSukiSU)
+              echo "root_flavor=resukisu" >> "$GITHUB_OUTPUT"
+              emit root_commit "$RESUKISU_COMMIT"
+              ROOT_MATRIX="[$(mk_entry resukisu ReSukiSU "$RESUKISU_COMMIT")]"
+              ;;
+            All)
+              ROOT_MATRIX="[$(mk_entry next KernelSU-Next "$NEXT_COMMIT"),$(mk_entry kernelsu KernelSU "$KERNELSU_COMMIT"),$(mk_entry resukisu ReSukiSU "$RESUKISU_COMMIT")]"
+              echo "root_flavor=" >> "$GITHUB_OUTPUT"
+              echo "root_commit=" >> "$GITHUB_OUTPUT"
+              ;;
+            *) echo "ERROR: unknown root_flavor '${{ inputs.root_flavor }}'" >&2; exit 1 ;;
+          esac
+          echo "root_matrix=$ROOT_MATRIX" >> "$GITHUB_OUTPUT"
+          declare -A SUSFS_BRANCHES=(
+            [susfs_commit_android12_5_10]="gki-android12-5.10"
+            [susfs_commit_android13_5_10]="gki-android13-5.10"
+            [susfs_commit_android13_5_15]="gki-android13-5.15"
+            [susfs_commit_android14_5_15]="gki-android14-5.15"
+            [susfs_commit_android14_6_1]="gki-android14-6.1"
+            [susfs_commit_android15_6_6]="gki-android15-6.6"
+            [susfs_commit_android16_6_12]="gki-android16-6.12"
+          )
+          for key in "${!SUSFS_BRANCHES[@]}"; do
+            emit "$key" "$(pick "${PIN_SUSFS[$key]}" https://gitlab.com/simonpunk/susfs4ksu.git refs/heads/${SUSFS_BRANCHES[$key]})"
+            emit "${key}_resukisu" "$(pick "${PIN_SUSFS_RESUKISU[$key]}" https://gitlab.com/simonpunk/susfs4ksu.git refs/heads/${SUSFS_BRANCHES[$key]})"
+          done
+          echo "Resolved:"
+          env | grep -E '^(nomount_commit|kernelsu_commit|root_commit|susfs_commit_)' | sort || true
+
   build-samsung:
+    needs: resolve-sources
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.resolve-sources.outputs.root_matrix) }}
     uses: ./.github/workflows/kernel-samsung.yml
     secrets: inherit
     with:
+      root_flavor: ${{ matrix.root_flavor }}
+      root_commit: ${{ matrix.root_commit }}
+      variant: ${{ matrix.variant }}
+      susfs_commit: ${{ matrix.root_flavor == 'resukisu' && needs.resolve-sources.outputs.susfs_commit_android14_6_1_resukisu || needs.resolve-sources.outputs.susfs_commit_android14_6_1 }}
+      susfs_commit_android12_5_10: ${{ needs.resolve-sources.outputs.susfs_commit_android12_5_10 }}
+      susfs_commit_android13_5_10: ${{ needs.resolve-sources.outputs.susfs_commit_android13_5_10 }}
+      susfs_commit_android13_5_15: ${{ needs.resolve-sources.outputs.susfs_commit_android13_5_15 }}
+      susfs_commit_android14_5_15: ${{ needs.resolve-sources.outputs.susfs_commit_android14_5_15 }}
+      susfs_commit_android14_6_1: ${{ needs.resolve-sources.outputs.susfs_commit_android14_6_1 }}
+      susfs_commit_android15_6_6: ${{ needs.resolve-sources.outputs.susfs_commit_android15_6_6 }}
+      susfs_commit_android16_6_12: ${{ needs.resolve-sources.outputs.susfs_commit_android16_6_12 }}
+      nomount_commit: ${{ needs.resolve-sources.outputs.nomount_commit }}
       susfs: ${{ inputs.susfs }}
       bbg: ${{ inputs.bbg }}
       unicodefix: ${{ inputs.unicodefix }}
       zeromount: ${{ inputs.zeromount }}
       nomount: ${{ inputs.nomount }}
-      ksun: ${{ inputs.ksun }}
       droidspace: ${{ inputs.droidspace }}
       ntsync: ${{ inputs.ntsync }}
       bbrv3: ${{ inputs.bbrv3 }}
@@ -131,15 +295,16 @@ jobs:
     if: inputs.release_type != 'Actions'
     needs:
       - build-samsung
+      - resolve-sources
 
     env:
       GH_TOKEN: ${{ github.token }}
-      RELEASE_NAME: "Samsung GKI Kernels With KSUN v3.3.0 & SUSFS v2.3.0"
+      RELEASE_NAME: "Samsung Kernels With SUSFS v2.3.0"
       RELEASE_BODY: ""
     steps:
       - name: Free Disk Space
         if: true
-        uses: endersonmenezes/free-disk-space@v3  # Use @main for latest, @v3 for stable
+        uses: endersonmenezes/free-disk-space@v3
         with:
           remove_android: true
           remove_dotnet: true
@@ -149,8 +314,8 @@ jobs:
           remove_packages: "azure-cli google-cloud-cli microsoft-edge-stable google-chrome-stable firefox postgresql* temurin-* *llvm* mysql* dotnet-sdk-*"
           remove_packages_one_command: true
           remove_folders: "/usr/share/swift /usr/share/miniconda /usr/share/az* /usr/local/lib/node_modules /usr/local/share/chromium /usr/local/share/powershell /usr/local/julia /usr/local/aws-cli /usr/local/aws-sam-cli /usr/share/gradle"
-          rm_cmd: "rmz"  # Use 'rmz' for faster deletion (default: 'rm')
-          rmz_version: "3.1.1"  # Required when rm_cmd is 'rmz'
+          rm_cmd: "rmz"
+          rmz_version: "3.1.1"
           testing: false
       
       - name: Checkout code
@@ -177,13 +342,14 @@ jobs:
 
       - name: get commit hashes
         run: |
-         echo "SUSFS_510=$(git ls-remote https://gitlab.com/simonpunk/susfs4ksu.git refs/heads/gki-android12-5.10 | cut -f1)" >> $GITHUB_ENV
-         echo "SUSFS_515=$(git ls-remote https://gitlab.com/simonpunk/susfs4ksu.git refs/heads/gki-android13-5.15 | cut -f1)" >> $GITHUB_ENV
-         echo "SUSFS_61=$(git ls-remote https://gitlab.com/simonpunk/susfs4ksu.git refs/heads/gki-android14-6.1 | cut -f1)" >> $GITHUB_ENV
-         echo "SUSFS_66=$(git ls-remote https://gitlab.com/simonpunk/susfs4ksu.git refs/heads/gki-android15-6.6 | cut -f1)" >> $GITHUB_ENV
-         echo "KSUN_HASH=$(git ls-remote https://github.com/pershoot/KernelSU-Next.git refs/heads/dev | cut -f1)" >> $GITHUB_ENV
-         echo "BBG_HASH=$(git ls-remote https://github.com/vc-teahouse/Baseband-guard.git refs/heads/main | cut -f1)" >> $GITHUB_ENV
-         echo "NM_HASH=$(git ls-remote https://github.com/maxsteeel/nomount.git refs/heads/master | cut -f1)" >> $GITHUB_ENV
+         echo "SUSFS_510=${{ needs.resolve-sources.outputs.susfs_commit_android12_5_10 }}" >> $GITHUB_ENV
+         echo "SUSFS_515=${{ needs.resolve-sources.outputs.susfs_commit_android13_5_15 }}" >> $GITHUB_ENV
+         echo "SUSFS_61=${{ needs.resolve-sources.outputs.susfs_commit_android14_6_1 }}" >> $GITHUB_ENV
+         echo "SUSFS_66=${{ needs.resolve-sources.outputs.susfs_commit_android15_6_6 }}" >> $GITHUB_ENV
+         echo "KSU_COMMIT=${{ needs.resolve-sources.outputs.ksu_commit }}" >> $GITHUB_ENV
+         echo "KSUN_COMMIT=${{ needs.resolve-sources.outputs.kernelsu_commit }}" >> $GITHUB_ENV
+         echo "RESUKI_COMMIT=${{ needs.resolve-sources.outputs.resukisu_commit }}" >> $GITHUB_ENV
+         echo "NM_HASH=${{ needs.resolve-sources.outputs.nomount_commit }}" >> $GITHUB_ENV
 
       - name: Set release body
         run: |
@@ -197,16 +363,13 @@ jobs:
           Features:
           EOF
 
-          if [ "${{ inputs.ksun }}" = "true" ]; then
-          cat <<'EOF' >> release_body.md
-          -> KernelSU-Next v3.3.0 - https://github.com/KernelSU-Next/KernelSU-Next
-          NOTE: For kernel integration I am using pershoots fork of KernelSU-next. He has claimed that even though everything works fine, the dev has warned that this is not production ready!
+          cat <<EOF >> release_body.md
+          -> Root: ${{ inputs.root_flavor }} (commit_mode: ${{ inputs.commit_mode }})
           EOF
-          fi
 
           if [ "${{ inputs.susfs }}" = "true" ]; then
           cat <<'EOF' >> release_body.md
-          -> SUSFS ඞ v2.3.0 - https://gitlab.com/simonpunk/susfs4ksu
+          -> SUSFS v2.3.0 - https://gitlab.com/simonpunk/susfs4ksu
           -> SUSFS Inline hooks
           EOF
           fi
@@ -284,39 +447,17 @@ jobs:
           -> https://github.com/sidex15/ksu_module_susfs
           -> https://github.com/rrr333nnn333/BRENE
 
-          Commit Hashes:
+          Pinned Commits (verified mode):
           EOF
-          if ${{ inputs.ksun }} == 'true' ]]; then
-          cat <<'EOF' >> release_body.md
-          
-          KSUN: ${{ env.KSUN_HASH }}
-          
-          EOF
-          fi
-          if ${{ inputs.susfs }} == 'true' ]]; then
-          cat <<'EOF' >> release_body.md
-          SUSFS: 
-          android12-5.10: ${{ env.SUSFS_510 }}
-          android13-5.15: ${{ env.SUSFS_515 }}
-          android14-6.1: ${{ env.SUSFS_61 }}
-          android15-6.6: ${{ env.SUSFS_66 }}
-          
-          EOF
-          fi
-          
-          if ${{ inputs.bbg }} == 'true' ]]; then
-          cat <<'EOF' >> release_body.md
-          BBG: ${{ env.BBG_HASH }}
-          
-          EOF
-          fi
-          
-          if ${{ inputs.nomount }} == 'true' ]]; then
-          cat <<'EOF' >> release_body.md
+          cat <<EOF >> release_body.md
+          KernelSU: ${{ env.KSU_COMMIT }}
+          KernelSU-Next: ${{ env.KSUN_COMMIT }}
+          ReSukiSU: ${{ env.RESUKI_COMMIT }}
+          SUSFS 5.10: ${{ env.SUSFS_510 }}
+          SUSFS 6.1: ${{ env.SUSFS_61 }}
+          SUSFS 6.6: ${{ env.SUSFS_66 }}
           NoMount: ${{ env.NM_HASH }}
-          
           EOF
-          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
@@ -335,11 +476,9 @@ jobs:
             echo "No artifact directories found under ./downloaded-artifacts; skipping upload."
           else
             for dir in "${anykernel_dirs[@]}"; do
-              # Check if this is an AnyKernel3 artifact directory
               if [[ "$(basename "$dir")" == *"-AnyKernel3" ]]; then
                 artifact_name=$(basename "$dir")
                 echo "Creating ZIP for $artifact_name..."
-                # Navigate into the directory and zip its contents directly
                 cd "$dir"
                 zip -r -9 "../../${artifact_name}.zip" ./*
                 cd - > /dev/null
@@ -348,23 +487,3 @@ jobs:
               fi
             done
           fi
-            
-#      - name: Send Telegram Notification
-#        if: inputs.release_type != 'Actions'
-#        run: |
-#          RELEASE_TYPE_TEXT=""
-#          if [ "${{ inputs.release_type }}" == "Pre-Release" ]; then
-#            RELEASE_TYPE_TEXT="🧪 *Pre-Release*"
-#          else
-#            RELEASE_TYPE_TEXT="🚀 *Release*"
-#          fi
-#          
-#          curl -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
-#            -F chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
-#            -F message_thread_id="${{ secrets.TELEGRAM_TOPIC_ID_GKI }}" \
-#            -F text="
-#            🌽 *New Kernel $RELEASE_TYPE_TEXT Uploaded*  
-#            📦 *Repository:* [${{ github.repository }}](https://github.com/${{ github.repository }})  
-#            ✏️ *Commit:* [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }})  
-#            [🔗 View GitHub Release](https://github.com/${{ github.repository }}/releases/tag/${{ env.NEW_TAG }})" \
-#            -F parse_mode="Markdown"

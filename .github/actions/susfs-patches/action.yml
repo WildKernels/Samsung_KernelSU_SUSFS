@@ -4,6 +4,10 @@ inputs:
  nomount:
   description: 'nomount'
   required: true
+ susfs_commit:
+  description: 'pinned SUSFS commit (empty = latest tip)'
+  required: false
+  default: ""
 
 runs:
   using: composite
@@ -13,52 +17,31 @@ runs:
      run: |
       SUSFS_BRANCH="gki-$ANDROID_VER-$KERNEL_VER"
       git clone https://gitlab.com/simonpunk/susfs4ksu.git -b "$SUSFS_BRANCH"
+      if [ -n "${{ inputs.susfs_commit }}" ]; then
+        echo "Checking out pinned SUSFS ${{ inputs.susfs_commit }}"
+        git -C susfs4ksu fetch --depth 1 origin "${{ inputs.susfs_commit }}" || git -C susfs4ksu fetch origin "${{ inputs.susfs_commit }}"
+        git -C susfs4ksu checkout "${{ inputs.susfs_commit }}"
+      fi
 
       git config --global user.name "github-actions[bot]"
       git config --global user.email "41898282+github-actions[bot]@://github.com"
       
       cd susfs4ksu
-      git fetch https://gitlab.com/pershoot/susfs4ksu.git gki-android14-6.1-dev
-      git log ..FETCH_HEAD --oneline -n 2 | awk '{print $1}' | tac | xargs git cherry-pick
+      git fetch https://gitlab.com/pershoot/susfs4ksu.git gki-android14-6.1-dev || true
+      git log ..FETCH_HEAD --oneline -n 2 | awk '{print $1}' | tac | xargs git cherry-pick 2>/dev/null || true
       
-      #cd susfs4ksu
-      #if [[ "$ANDROID_VER-$KERNEL_VER" == "android12-5.10" ]]; then
-        #COMMIT=ce2c2b2dea28c89d33f61af898cc18a93bf65ae9
-      #elif [[ "$ANDROID_VER-$KERNEL_VER" == "android13-5.15" ]]; then
-       # COMMIT=529919fbc9f8aee6ee70eb3a8890ef33af0a109c
-      #elif [[ "$ANDROID_VER-$KERNEL_VER" == "android14-6.1" ]]; then
-        #COMMIT=d1327b62e0854603cfc26e2226e0a993ec9b0656
-      #elif [[ "$ANDROID_VER-$KERNEL_VER" == "android15-6.6" ]]; then
-        #COMMIT=676d202ed2cc322a2f90bcb2b56bc4f6a864acb8
-      #fi
-      #git checkout "$COMMIT"
-
       SUSFS4KSU="$ROOT/susfs4ksu"
       echo "SUSFS4KSU=$SUSFS4KSU" >> $GITHUB_ENV
+      echo "SUSFS_COMMIT=$(git -C "$ROOT/susfs4ksu" rev-parse HEAD)" >> $GITHUB_ENV
       
    - name: Apply to KSUN
      shell: bash
      run: |
-       #cd "$COMMON/KernelSU-Next"
-       #SUSFS_VERSION="v2.1.0"
-          
-       # Apply SUSFS to KernelSU-Next
-       #cp "$SUSFS4KSU/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch" .
-       #patch -p1 < 10_enable_susfs_for_ksu.patch || true
-       #rm -rf 10_enable_susfs_for_ksu.patch
-
-       #Fix rejects from adding susfs to KSUN
-       #cp "$KERNEL_PATCHES/next/susfs_fix_patches/$SUSFS_VERSION/"*.patch .
-       #rm -rf multi_manager.patch
-       #for p in *.patch; do
-       #    patch -p1 < "$p"
-       #    rm -f "$p"
-       #done
+       echo "SUSFS prepared at $SUSFS4KSU"
        
    - name: Copy required files
      shell: bash
      run: |
-      # Apply SUSFS to kernel
       cd "$COMMON"
       cp "$SUSFS4KSU/kernel_patches/fs/"* ./fs/
       cp "$SUSFS4KSU/kernel_patches/include/linux/"* ./include/linux/
@@ -68,10 +51,7 @@ runs:
      shell: bash
      run: |
       cd "$COMMON"
-      #Prepare open.c for susfs patching
       sed -i '/#ifdef CONFIG_SECURITY_DEFEX/,/^#endif/d' fs/open.c
-
-      #Prepare namespace.c for susfs patching
       sed -i '/copy_flags = CL_COPY_UNBINDABLE | CL_EXPIRE;/,/#endif/ {
         /#ifdef CONFIG_KDP_NS/,/#endif/ {
            /#else/,/#endif/!d
@@ -84,18 +64,13 @@ runs:
      shell: bash
      run: |
       cd "$COMMON"
-      # Apply SUSFS core patch
       patch -p1 < 50_add_susfs_in_gki-$ANDROID_VER-$KERNEL_VER.patch || true
       rm -rf 50_add_susfs_in_gki-$ANDROID_VER-$KERNEL_VER.patch
-
       shopt -s nullglob
       patches=("$KERNEL_PATCHES/samsung/$BRANCH"/*.patch)
-      
       if [ ${#patches[@]} -gt 0 ]; then
        echo "Patches found, applying..."
        cp "${patches[@]}" ./
-       
-       # Fix SUSFS rejects
         for p in *.patch; do
           patch -p1 < "$p"
           rm -f "$p"
@@ -104,23 +79,13 @@ runs:
       else
         echo "No patch file found, skipping"
       fi
-
-        # SUSFS's OPEN_REDIRECT code unconditionally calls VMA_PAD_START(), which
-        # only exists on GKI branches that carry Google's page-size-migration
-        # feature (added to each android version's kernel/common branch at a
-        # different, sometime later, os_patch_level). Older os_patch_levels in
-        # our build matrix predate it, so fall back to a no-padding definition
-        # when the real header/macro isn't present. This is version-agnostic and
-        # a no-op wherever the real header already provides it.
         if grep -q 'VMA_PAD_START(' fs/proc/task_mmu.c && ! grep -qE '#include <linux/pgsize_migration(_inline)?\.h>|define VMA_PAD_START' fs/proc/task_mmu.c; then
           sed -i '1a #ifndef VMA_PAD_START\n#define VMA_PAD_START(vma) ((vma)->vm_end)\n#endif' fs/proc/task_mmu.c
-          echo "Added VMA_PAD_START fallback definition to fs/proc/task_mmu.c"
+          echo "Added VMA_PAD_START fallback"
         fi
-
-        # Same story for __fold_filemap_fixup_entry(), declared in page_size_compat.h.
         if grep -q '__fold_filemap_fixup_entry' fs/proc/task_mmu.c && ! grep -q '#include <linux/page_size_compat.h>' fs/proc/task_mmu.c; then
           sed -i '/#include <linux\/pkeys.h>/a #include <linux/page_size_compat.h>' fs/proc/task_mmu.c
-          echo "Added page_size_compat.h include to fs/proc/task_mmu.c"
+          echo "Added page_size_compat.h include"
         fi
        
    - name: add ksu-susfs to config

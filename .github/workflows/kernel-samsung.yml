@@ -1,12 +1,61 @@
 name: Kernel Config - Samsung
 
 permissions:
-  contents: write  # Allow writing to repository contents
-  actions: write   # Allows triggering actions
+  contents: write
+  actions: write
 
 on:
   workflow_call:
     inputs:
+      root_flavor:
+        description: "next / kernelsu / resukisu"
+        required: false
+        type: string
+        default: "next"
+      root_commit:
+        required: false
+        type: string
+        default: ""
+      variant:
+        required: false
+        type: string
+        default: ""
+      susfs_commit:
+        required: false
+        type: string
+        default: ""
+      susfs_commit_android12_5_10:
+        required: false
+        type: string
+        default: ""
+      susfs_commit_android13_5_10:
+        required: false
+        type: string
+        default: ""
+      susfs_commit_android13_5_15:
+        required: false
+        type: string
+        default: ""
+      susfs_commit_android14_5_15:
+        required: false
+        type: string
+        default: ""
+      susfs_commit_android14_6_1:
+        required: false
+        type: string
+        default: ""
+      susfs_commit_android15_6_6:
+        required: false
+        type: string
+        default: ""
+      susfs_commit_android16_6_12:
+        required: false
+        type: string
+        default: ""
+      nomount_commit:
+        required: false
+        type: string
+        default: ""
       susfs:
         required: true
         type: string
@@ -20,9 +69,6 @@ on:
         required: true
         type: string
       nomount:
-        required: true
-        type: string
-      ksun:
         required: true
         type: string
       droidspace:
@@ -52,7 +98,7 @@ on:
 
 jobs:
   build-kernels-a12:
-    name: "Samsung-${{ matrix.branch }}-${{ matrix.kernel_version }}-${{ matrix.android_version }}"
+    name: "Samsung-${{ matrix.branch }}-${{ matrix.kernel_version }}-${{ matrix.android_version }} (${{ inputs.variant || inputs.root_flavor }})"
     strategy:
       fail-fast: false
       matrix:
@@ -182,12 +228,23 @@ jobs:
     with:
       branch: ${{ matrix.branch }}
       build_type: ${{ matrix.build_type }}
+      root_flavor: ${{ inputs.root_flavor }}
+      root_commit: ${{ inputs.root_commit }}
+      variant: ${{ inputs.variant }}
+      susfs_commit: ${{ inputs.susfs_commit }}
+      susfs_commit_android12_5_10: ${{ inputs.susfs_commit_android12_5_10 }}
+      susfs_commit_android13_5_10: ${{ inputs.susfs_commit_android13_5_10 }}
+      susfs_commit_android13_5_15: ${{ inputs.susfs_commit_android13_5_15 }}
+      susfs_commit_android14_5_15: ${{ inputs.susfs_commit_android14_5_15 }}
+      susfs_commit_android14_6_1: ${{ inputs.susfs_commit_android14_6_1 }}
+      susfs_commit_android15_6_6: ${{ inputs.susfs_commit_android15_6_6 }}
+      susfs_commit_android16_6_12: ${{ inputs.susfs_commit_android16_6_12 }}
+      nomount_commit: ${{ inputs.nomount_commit }}
       susfs: ${{ inputs.susfs }}
       bbg: ${{ inputs.bbg }}
       unicodefix: ${{ inputs.unicodefix }}
       zeromount: ${{ inputs.zeromount }}
       nomount: ${{ inputs.nomount }}
-      ksun: ${{ inputs.ksun }}
       droidspace: ${{ inputs.droidspace }}
       ntsync: ${{ inputs.ntsync }}
       bbrv3: ${{ inputs.bbrv3 }}
@@ -196,4 +253,3 @@ jobs:
       optimization: ${{ inputs.optimization }}
       ttl: ${{ inputs.ttl }}
       lto: ${{ inputs.lto }}
-

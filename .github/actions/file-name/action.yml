@@ -1,9 +1,18 @@
 name: set file name for ak3zip
 description: set file name for ak3 zip
 inputs:
+ root_flavor:
+  description: 'root flavor'
+  required: false
+  default: ""
+ variant:
+  description: 'variant'
+  required: false
+  default: ""
  ksun:
-  description: 'ksun'
-  required: true
+  description: 'ksun (deprecated)'
+  required: false
+  default: "true"
  susfs:
   description: 'susfs'
   required: true
@@ -36,16 +45,22 @@ inputs:
   required: true
 
 runs:
- using: composite
- steps:
+  using: composite
+  steps:
   - name: set file name for ak3zip
     shell: bash
     run: |
      ARTIFACT_BASE="$BRANCH"
-          
-     # This gives dynamic file name depending on which features are enabled
-     FILE_NAME="${ARTIFACT_BASE}"
-     [[ "${{ inputs.ksun }}" == "true" ]] && FILE_NAME="${FILE_NAME}-KSUN${KSU_VERSION}"
+     VARIANT_LABEL="${{ inputs.variant }}"
+     if [ -z "$VARIANT_LABEL" ]; then
+       case "${{ inputs.root_flavor }}" in
+         next) VARIANT_LABEL="KSUN" ;;
+         kernelsu) VARIANT_LABEL="KSU" ;;
+         resukisu) VARIANT_LABEL="RESUKISU" ;;
+         *) VARIANT_LABEL="KSUN" ;;
+       esac
+     fi
+     FILE_NAME="${ARTIFACT_BASE}-${VARIANT_LABEL}"
      [[ "${{ inputs.susfs }}" == "true" ]] && FILE_NAME="${FILE_NAME}-SUSFS"
      [[ "${{ inputs.zeromount }}" == "true" ]] && FILE_NAME="${FILE_NAME}-ZM"
      [[ "${{ inputs.nomount }}" == "true" ]] && FILE_NAME="${FILE_NAME}-NM"
@@ -57,8 +72,7 @@ runs:
      [[ "${{ inputs.ttl }}" == "true" ]] && FILE_NAME="${FILE_NAME}-TTL"
      [[ "${{ inputs.unicodefix }}" == "true" ]] && FILE_NAME="${FILE_NAME}-UF"
      
-      
      echo "ARTIFACT_BASE=$ARTIFACT_BASE" >> $GITHUB_ENV
      echo "FILE_NAME=$FILE_NAME" >> $GITHUB_ENV
           
-     echo "✅ Final artifact name: $FILE_NAME"
+     echo "Final artifact name: $FILE_NAME"
