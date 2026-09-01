@@ -105,4 +105,4 @@ Need help? Open an issue in this repository or reach out on Telegram. Please ask
 - Wise: [wise.com/pay/me/ngadhnjimh](wise.com/pay/me/ngadhnjimh)
 - Ko-fi: [https://ko-fi.com/jimsterino98](https://ko-fi.com/jimsterino98)
 - Buy me a coffee: [buymeacoffee.com/jimsterino98](buymeacoffee.com/jimsterino98)
-DM on telegram for crypto donations!
+- Crypto: DM on Telegram for crypto donations!
