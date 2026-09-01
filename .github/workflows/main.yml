@@ -48,7 +48,7 @@ on:
         default: All
 
       device:
-        description: "Branch - All or e.g. SM-S938B-Oneui8.5 - branches: https://github.com/WildKernels/Samsung_Kernels/branches"
+        description: "Branch - All or comma list e.g. SM-S938B-Oneui8.5,SM-S928B-Oneui8 - branches: https://github.com/WildKernels/Samsung_Kernels/branches"
         required: false
         type: string
         default: All

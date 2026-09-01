@@ -8,7 +8,7 @@ on:
   workflow_call:
     inputs:
       device:
-        description: "Branch - All or e.g. SM-S938B-Oneui8.5 - branches: https://github.com/WildKernels/Samsung_Kernels/branches"
+        description: "Branch - All or comma list e.g. SM-S938B-Oneui8.5,SM-S928B-Oneui8 - branches: https://github.com/WildKernels/Samsung_Kernels/branches"
         required: false
         type: string
         default: "All"
@@ -116,6 +116,13 @@ jobs:
           MATRIX='[{"branch":"SM-S938B-Oneui8.5","build_type":"Bazel"},{"branch":"SM-S938B-Oneui7","build_type":"Bazel"},{"branch":"SM-S931B-Oneui8.5","build_type":"Bazel"},{"branch":"SM-S931B-Oneui8","build_type":"Bazel"},{"branch":"SM-A055M-Oneui7","build_type":"Bazel"},{"branch":"SM-A055F-Oneui7","build_type":"Bazel"},{"branch":"SM-S928B-Oneui8.5","build_type":"Bazel"},{"branch":"SM-S928B-Oneui8-bit4","build_type":"Bazel"},{"branch":"SM-S928B-Oneui8-bit5","build_type":"Bazel"},{"branch":"SM-S928B-Oneui7","build_type":"Bazel"},{"branch":"SM-S928B-Oneui6.1","build_type":"Bazel"},{"branch":"SM-A556B-Oneui7-bitA","build_type":"Bazel"},{"branch":"SM-A556E-Oneui7-bitA","build_type":"Bazel"},{"branch":"SM-S926B-Oneui8.5","build_type":"Bazel"},{"branch":"SM-S926B-Oneui8","build_type":"Bazel"},{"branch":"SM-S926B-Oneui7-bit7","build_type":"Bazel"},{"branch":"SM-S926B-Oneui7-bit8","build_type":"Bazel"},{"branch":"SM-S926B-Oneui7-bit9","build_type":"Bazel"},{"branch":"SM-X926B-Oneui6.1","build_type":"Bazel"},{"branch":"SM-F741B-Oneui8","build_type":"Bazel"},{"branch":"SM-F731B-Oneui6","build_type":"Bazel"},{"branch":"SM-F731B-Oneui7","build_type":"Bazel"},{"branch":"SM-F731B-Oneui8","build_type":"Bazel"},{"branch":"SM-F731B-Oneui8.5","build_type":"Bazel"},{"branch":"SM-A546B-Oneui7","build_type":"make"},{"branch":"SM-A546B-Oneui8","build_type":"make"},{"branch":"SM-A546B-Oneui6.0","build_type":"make"},{"branch":"SM-A546E-Oneui7","build_type":"make"},{"branch":"SM-A546E-Oneui8","build_type":"make"},{"branch":"SM-A166B-Oneui7","build_type":"make"},{"branch":"SM-A057M-Oneui7","build_type":"Bazel"},{"branch":"SM-X710-Oneui6.1.1","build_type":"Bazel"},{"branch":"SM-X916B","build_type":"Bazel"},{"branch":"SM-F946N-Oneui7","build_type":"Bazel"},{"branch":"SM-F946B-Oneui8","build_type":"Bazel"},{"branch":"SM-S916B-Oneui8","build_type":"Bazel"},{"branch":"SM-S918B-Oneui8","build_type":"Bazel"},{"branch":"SM-S918B-Oneui8.5","build_type":"Bazel"},{"branch":"SM-S9180-Oneui6.1","build_type":"Bazel"},{"branch":"SM-S918B-Oneui7","build_type":"Bazel"},{"branch":"SM-M146B-Oneui7-ADYJ2","build_type":"make"},{"branch":"SM-S911B-Oneui8.5","build_type":"Bazel"},{"branch":"SM-S911B-Oneui8-bit8","build_type":"Bazel"},{"branch":"SM-S911B-Oneui8","build_type":"Bazel"},{"branch":"SM-S911B-Oneui7","build_type":"Bazel"},{"branch":"SM-S911B-Oneui6.1-bit7","build_type":"Bazel"},{"branch":"SM-S911B-Oneui6.1-bit8","build_type":"Bazel"},{"branch":"SM-X610-Oneui6.1.1-bit7","build_type":"make"},{"branch":"SM-X800-Oneui8","build_type":"make"},{"branch":"SM-S908E-Oneui8","build_type":"make"},{"branch":"SM-S901E-Oneui8","build_type":"make"},{"branch":"SM-M556B-Oneui8","build_type":"make"},{"branch":"SM-S908B-Oneui8-bitK","build_type":"make"},{"branch":"SM-A075M-Oneui7","build_type":"make"},{"branch":"SM-S906E-Oneui8","build_type":"make"},{"branch":"SM-X610-Oneui7","build_type":"make"},{"branch":"SM-A356E-Oneui8","build_type":"make"},{"branch":"SM-A356E-Oneui8.5","build_type":"make"},{"branch":"SM-S711B-Oneui8.5","build_type":"make"}]'
           if [ "$DEVICE" = "All" ] || [ -z "$DEVICE" ]; then
             echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+          elif [[ "$DEVICE" == *","* ]]; then
+            FILTERED=$(echo "$MATRIX" | jq -c --arg d "$DEVICE" '($d | split(",") | map(gsub("^[ ]+|[ ]+$";""))) as $want | [.[] | select(.branch as $b | $want | index($b)) ]')
+            if [ "$FILTERED" = "[]" ] || [ -z "$FILTERED" ]; then
+              echo "ERROR: none of the requested devices matched: '$DEVICE'" >&2
+              exit 1
+            fi
+            echo "matrix=$FILTERED" >> "$GITHUB_OUTPUT"
           else
             FILTERED=$(echo "$MATRIX" | jq -c --arg d "$DEVICE" '[.[] | select(.branch == $d)]')
             if [ "$FILTERED" = "[]" ] || [ -z "$FILTERED" ]; then
