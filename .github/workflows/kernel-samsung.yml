@@ -8,7 +8,7 @@ on:
   workflow_call:
     inputs:
       device:
-        description: "Device branch (All = all devices)"
+        description: "Branch - All or e.g. SM-S938B-Oneui8.5 - branches: https://github.com/WildKernels/Samsung_Kernels/branches"
         required: false
         type: string
         default: "All"
