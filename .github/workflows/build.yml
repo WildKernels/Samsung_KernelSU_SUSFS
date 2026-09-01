@@ -210,7 +210,7 @@ jobs:
         
       - name: Set CONFIG Environment Variable
         run: |
-          CONFIG="$BRANCH-$ANDROID_VERSION_$KERNEL_VERSION"
+          CONFIG="$BRANCH-${ANDROID_VER}_${KERNEL_VER}"
           echo "CONFIG=$CONFIG" >> $GITHUB_ENV
 
       - name: dependencies
@@ -254,7 +254,7 @@ jobs:
           # Other flavors use pinned verified commit per kernel version.
           # We receive all per-version pins from kernel-samsung.yml inputs.
           KVER="$KERNEL_VER"
-          AVER="$ANDROID_VERSION"
+          AVER="$ANDROID_VER"
           echo "KERNEL_VER=$KVER ANDROID_VER=$AVER root_flavor=${{ inputs.root_flavor }}"
 
           pick_pin() {
