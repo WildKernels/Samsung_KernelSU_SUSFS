@@ -99,6 +99,14 @@ runs:
           echo "Selected root checkout does not contain a kernel integration." >&2
           exit 1
         fi
+        # ReSukiSU+Bazel sandbox fix: bypass .git submodule check (sandbox has no .git)
+        if [ "$flavor" = "resukisu" ]; then
+          kbuild="$CLONE_BASE/$directory/kernel/Kbuild"
+          if grep -q "LOCAL_GIT_EXISTS" "$kbuild"; then
+            sed -i 's/^LOCAL_GIT_EXISTS.*/LOCAL_GIT_EXISTS := 1/' "$kbuild"
+            echo "Patched ReSukiSU Kbuild for Bazel sandbox (LOCAL_GIT_EXISTS=1)"
+          fi
+        fi
         root_version="$(git -C "$CLONE_BASE/$directory" describe --tags --always --dirty)"
         relative_kernel="$(realpath --relative-to="$drivers_dir" "$CLONE_BASE/$directory/kernel" 2>/dev/null || echo "$CLONE_BASE/$directory/kernel")"
         ln -s "$relative_kernel" "$drivers_dir/kernelsu"
