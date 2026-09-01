@@ -114,8 +114,6 @@ on:
         default: All
 
       susfs:
-
-      susfs:
         description: "SUSFS"
         required: false
         type: boolean
