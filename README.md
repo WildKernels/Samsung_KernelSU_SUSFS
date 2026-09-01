@@ -16,7 +16,7 @@
 
 ## About
 
-Samsung kernels built on [Samsung's sources](https://github.com/WildKernels/manifest) with KernelSU and SUSFS for root hiding and detection evasion — per-model branches (OneUI) built from Samsung manifests. Now with multiple root-implementation flavors.
+Samsung kernels built on Samsung's open sources from [opensource.samsung.com/main](https://opensource.samsung.com/main), mirrored at [WildKernels/Samsung_Kernels](https://github.com/WildKernels/Samsung_Kernels), with KernelSU and SUSFS for root hiding and detection evasion — per-model branches (OneUI) built from Samsung manifests. Now with multiple root-implementation flavors.
 
 ---
 
