@@ -88,11 +88,11 @@ Have an idea or improvement in mind? Contributions are always welcome — feel f
 <div align="center">
 
 [![Telegram Group](https://img.shields.io/badge/Telegram-%40WildKernelsTG-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/WildKernelsTG)
-[![Telegram DM](https://img.shields.io/badge/Telegram-%40TheWildJames-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/TheWildJames)
+[![Telegram DM](https://img.shields.io/badge/Telegram-%40Jimsterino98-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/Jimsterino98)
 
 </div>
 
-Need help? Open an issue in this repository or reach out on Telegram. Please ask in the [WildKernelsTG group](https://t.me/WildKernelsTG) first for general issues. DMs to [@TheWildJames](https://t.me/TheWildJames) are always open.
+Need help? Open an issue in this repository or reach out on Telegram. Please ask in the [WildKernelsTG group](https://t.me/WildKernelsTG) first for general issues. DMs to [@Jimsterino98](https://t.me/Jimsterino98) are always open.
 
 ---
 
