@@ -38,7 +38,7 @@ Samsung kernels built on [Samsung's sources](https://github.com/WildKernels/mani
 
 ## Installation
 
-See **[Installation Guide](docs/installation.md)**.
+See **[Installation Guide](https://github.com/WildKernels/GKI_KernelSU_SUSFS/blob/dev/docs/installation.md)**.
 
 ---
 
