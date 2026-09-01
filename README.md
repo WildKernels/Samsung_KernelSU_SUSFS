@@ -26,19 +26,19 @@ Samsung kernels built on [Samsung's sources](https://github.com/WildKernels/mani
 - **susfs4ksu** — root hiding (incl. Ptrace Leak Fix, Unicode Fix) — pinned per Android/kernel-version, branch-tip for Next
 - **NoMount / ZeroMount** — mount metamodule variants
 - **Baseband Guard** — partition protection
-- **Networking** — WireGuard, BBRv3, IPSet, CIFS, TTL/HL target, IPv6 NAT
-- **BPF** — BTF / eBPF / FUSE-BPF
-- **Performance** — incl. NTSync, build optimizations, LTO per kernel
+- **Networking** — BBRv3, IPSet, IPv6 NAT, TTL/HL target
+- **Filesystem** — OverlayFS, TMPFS xattr / POSIX ACL, KPM
+- **Performance** — NTSync, build optimizations, LTO per kernel
 - **DroidSpaces** — container runtime
 
 > [!TIP]
-> Full per-feature documentation: [GKI docs/features.md](https://github.com/WildKernels/GKI_KernelSU_SUSFS/blob/dev/docs/features.md) — same feature set, Samsung sources.
+> Full per-feature documentation: [GKI docs/features.md](https://github.com/WildKernels/GKI_KernelSU_SUSFS/blob/dev/docs/features.md) — networking/filesystem features trimmed to what Samsung sources actually enable.
 
 ---
 
 ## Installation
 
-See **[KernelSU Installation Guide](https://kernelsu.org/guide/installation.html)**. Flash the AnyKernel3 zip for your model/OneUI branch via custom recovery.
+See **[Installation Guide](docs/installation.md)**.
 
 ---
 
