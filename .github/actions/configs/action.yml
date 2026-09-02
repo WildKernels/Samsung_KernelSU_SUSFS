@@ -40,6 +40,8 @@ runs:
          target_config="$COMMON/arch/arm64/configs/s5e8845-bazel_defconfig"
      elif [[ $BRANCH == SM-A055* ]]; then
          target_config="$CONFIG/kernel/kernel_device_modules-6.6/arch/arm64/configs/mediatek-bazel_defconfig"
+     elif [[ $BRANCH == SM-X926* ]]; then
+         target_config="$CONFIG/kernel/kernel_device_modules-6.1/arch/arm64/configs/mediatek-bazel_defconfig"
      elif [[ $BRANCH == SM-A075* ]]; then
          target_config="$COMMON/arch/arm64/configs/a07_00_defconfig"
      else
