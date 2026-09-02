@@ -125,6 +125,12 @@ on:
         default: true
         type: boolean
 
+      kpm:
+        description: "kpm"
+        required: false
+        default: true
+        type: boolean
+
 jobs:
 
   resolve-sources:
@@ -296,6 +302,7 @@ jobs:
       ttl: ${{ inputs.ttl }}
       cache: ${{ inputs.cache }}
       lto: ${{ inputs.lto }}
+      kpm: ${{ inputs.kpm }}
 
   release:
     runs-on: ubuntu-latest
