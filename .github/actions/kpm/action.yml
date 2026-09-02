@@ -12,27 +12,24 @@ runs:
       
       cd "$ANYKERNEL3"
       chmod +x patch_linux
+      
       if [[ -f Image.gz ]]; then
-      #decompress .gz to raw
-      gzip -d Image.gz
-      
-      #apply kpm patch
-      ./patch_linux
-      echo "KPM patch applied successfully!"
-      rm patch_linux
-      rm Image
-      mv oImage Image
-      
-      # 3. compress it back to gz
-      gzip -9 Image
-      
+          # decompress .gz to raw
+          gzip -d Image.gz
+          
+          # apply kpm patch
+          ./patch_linux
+          echo "KPM patch applied successfully!"
+          rm patch_linux
+          rm Image
+          mv oImage Image
+          
+          # compress it back to gz
+          gzip -9 Image
       else
-      
-      ./patch_linux
-      
-      echo "KPM patch applied successfully!"
-      rm patch_linux
-      rm Image
-      mv oImage Image
+          ./patch_linux
+          echo "KPM patch applied successfully!"
+          rm patch_linux
+          rm Image
+          mv oImage Image
       fi
-      
