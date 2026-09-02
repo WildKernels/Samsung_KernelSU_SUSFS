@@ -354,7 +354,6 @@ jobs:
         uses: ./.github/actions/configs
         with:
          kpm: ${{ inputs.kpm }}
-         root_flavor: ${{ inputs.root_flavor }}
          
       - name: Change Kernel Name and clean dirty
         uses: ./.github/actions/kernel-name
