@@ -352,6 +352,8 @@ jobs:
 
       - name: Set Kernel Configuration Variables
         uses: ./.github/actions/configs
+        with:
+         kpm: ${{ inputs.kpm }}
          
       - name: Change Kernel Name and clean dirty
         uses: ./.github/actions/kernel-name
