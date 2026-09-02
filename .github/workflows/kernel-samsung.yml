@@ -100,6 +100,9 @@ on:
       lto:
         required: true
         type: string
+      kpm:
+        required: true
+        type: string
 
 jobs:
   setup:
@@ -170,3 +173,4 @@ jobs:
       optimization: ${{ inputs.optimization }}
       ttl: ${{ inputs.ttl }}
       lto: ${{ inputs.lto }}
+      kpm: ${{ inputs.kpm }}
