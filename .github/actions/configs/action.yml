@@ -1,5 +1,10 @@
 name: add configs
 description: add configs and disabling securities
+inputs:
+ kpm:
+  description: 'kpm'
+  required: true
+  
 
 runs:
  using: composite
@@ -12,6 +17,7 @@ runs:
      "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_TMPFS_POSIX_ACL
      
   - name: enable KPM support
+    if: inputs.kpm == 'true'
     shell: bash
     run: |
      "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_KALLSYMS
