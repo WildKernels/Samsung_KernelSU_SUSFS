@@ -17,6 +17,8 @@ runs:
      "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_KALLSYMS
      "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_KALLSYMS_ALL
      "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_KPM
+     "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_RELOCATABLE
+     "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_CFI_CLANG
      
   - name: nuke securities for root access
     shell: bash
@@ -56,9 +58,6 @@ runs:
      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_FIVE
      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KDP
      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KDP_NS
-     #"$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KNOX
-     #"$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KNOX_NCM
-     #"$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KNOX_KAP
      fi
 
   - name: remove check_defconfig
