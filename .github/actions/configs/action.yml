@@ -62,8 +62,6 @@ runs:
      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_RKP_CFP_JOPP
      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_RKP_CFP_ROPP
      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_RKP_CFP
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_TIMA_RKP
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_SEC_DEFEX
      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_SECURITY_DEFEX
      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_PROCA
      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_FIVE
