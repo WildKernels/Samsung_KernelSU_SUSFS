@@ -23,16 +23,19 @@ runs:
             repo="https://github.com/tiann/KernelSU.git"
             directory="KernelSU"
             manager="KernelSU Manager"
+            repobranch="main"
             ;;
           next)
             repo="https://github.com/KernelSU-Next/KernelSU-Next.git"
             directory="KernelSU-Next"
             manager="KernelSU Next Manager"
+            repobranch="dev"
             ;;
           resukisu)
             repo="https://github.com/ReSukiSU/ReSukiSU.git"
             directory="ReSukiSU"
             manager="ReSukiSU Manager"
+            repobranch="main"
             ;;
           *)
             echo "Unsupported root flavor: $flavor" >&2
@@ -118,6 +121,42 @@ runs:
         echo "ROOT_VERSION=$root_version" >> "$GITHUB_ENV"
         echo "ROOT_COMMIT=$actual_commit" >> "$GITHUB_ENV"
         echo "ROOT_DIR=$CLONE_BASE/$directory" >> "$GITHUB_ENV"
+
+        cd "$CLONE_BASE/$directory"
+        
+        # Explicitly fetch the branch tracking ref and all tags into the clone
+        git fetch origin "$repobranch":refs/remotes/origin/"$repobranch" --tags --unshallow 2>/dev/null || \
+        git fetch origin "$repobranch":refs/remotes/origin/"$repobranch" --tags 2>/dev/null || true
+        
+        # Extract and export KSU version info from the fetched tracking branch
+        KSU_GIT_VERSION=$(git rev-list --count "refs/remotes/origin/$repobranch" 2>/dev/null || echo "0")
+        KSU_GIT_TAG=$(git describe --tags --abbrev=0 "refs/remotes/origin/$repobranch" 2>/dev/null || echo "v0.0.1")
+        KSU_VERSION=$((30000 + KSU_GIT_VERSION))
+
+        cd kernel
+        
+        # Dynamically target the right version and tag variable patterns
+        if [ "$flavor" = "resukisu" ]; then
+          # ReSukiSU targets KSU_VERSION and KSU_TAG_NAME explicitly
+          sed -i "s|^KSU_VERSION :=.*|KSU_VERSION := ${KSU_VERSION}|" Kbuild
+          sed -i "s|^KSU_TAG_NAME.*:=.*|KSU_TAG_NAME := ${KSU_GIT_TAG}|" Kbuild
+        elif [ "$flavor" = "next" ]; then
+          # Official KernelSU and KernelSU-Next use the fallback pattern
+          sed -i "s/^KSU_VERSION_FALLBACK := 1$/KSU_VERSION_FALLBACK := ${KSU_VERSION}/" Kbuild
+          sed -i "s|^KSU_VERSION_TAG_FALLBACK := v0.0.1$|KSU_VERSION_TAG_FALLBACK := ${KSU_GIT_TAG}|" Kbuild
+        else
+          # 1. Overwrite the dynamic Git count query with your calculated raw count
+            sed -i "s|^KSU_GIT_VERSION :=.*|KSU_GIT_VERSION := ${KSU_GIT_VERSION}|" Kbuild
+            
+            # 2. Hardcode the validation check true state flag
+            sed -i "s|^KSU_GIT_VERSION_VALID :=.*|KSU_GIT_VERSION_VALID := 1|" Kbuild
+            
+            # 3. Direct replacement of the eval block using your final computed final total
+            sed -i "s|^\\$(eval KSU_VERSION=\\$(shell expr 30000 + \\$(KSU_GIT_VERSION)))|\\$(eval KSU_VERSION=${KSU_VERSION})|" Kbuild
+        fi
+        
+        echo "KSU_GIT_TAG=$KSU_GIT_TAG" >> "$GITHUB_ENV"
+        echo "KSU_VERSION=$KSU_VERSION" >> "$GITHUB_ENV"
 
     - name: Enable root configuration
       shell: bash
