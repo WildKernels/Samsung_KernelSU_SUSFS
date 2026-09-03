@@ -137,11 +137,14 @@ runs:
         
         # Dynamically target the right version and tag variable patterns
         if [ "$flavor" = "resukisu" ]; then
+          # Add the 700 offset specifically required by ReSukiSU's version logic
+            KSU_VERSION=$((KSU_VERSION + 700))
+            
           # ReSukiSU targets KSU_VERSION and KSU_TAG_NAME explicitly
           sed -i "s|^KSU_VERSION :=.*|KSU_VERSION := ${KSU_VERSION}|" Kbuild
           sed -i "s|^KSU_TAG_NAME.*:=.*|KSU_TAG_NAME := ${KSU_GIT_TAG}|" Kbuild
         elif [ "$flavor" = "next" ]; then
-          # Official KernelSU and KernelSU-Next use the fallback pattern
+          #KernelSU-Next uses fallback pattern
           sed -i "s/^KSU_VERSION_FALLBACK := 1$/KSU_VERSION_FALLBACK := ${KSU_VERSION}/" Kbuild
           sed -i "s|^KSU_VERSION_TAG_FALLBACK := v0.0.1$|KSU_VERSION_TAG_FALLBACK := ${KSU_GIT_TAG}|" Kbuild
         else
