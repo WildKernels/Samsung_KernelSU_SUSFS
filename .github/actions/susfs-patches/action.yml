@@ -4,6 +4,10 @@ inputs:
  nomount:
   description: 'nomount'
   required: true
+ flavor:
+  description: 'root flavor (kernelsu, next, resukisu) - pershoot commits only apply to next'
+  required: false
+  default: ""
  susfs_commit:
   description: 'pinned SUSFS commit (empty = latest tip)'
   required: false
@@ -27,8 +31,12 @@ runs:
       git config --global user.email "41898282+github-actions[bot]@://github.com"
       
       cd susfs4ksu
-      git fetch https://gitlab.com/pershoot/susfs4ksu.git gki-android14-6.1-dev || true
-      git log ..FETCH_HEAD --oneline -n 2 | awk '{print $1}' | tac | xargs git cherry-pick 2>/dev/null || true
+      # Pershoot's gki-android14-6.1-dev commits only apply to KernelSU-Next
+      # (dev-susfs fork). Other flavors use the simonpunk checkout as-is.
+      if [ "${{ inputs.flavor }}" = "next" ]; then
+        git fetch https://gitlab.com/pershoot/susfs4ksu.git gki-android14-6.1-dev || true
+        git log ..FETCH_HEAD --oneline -n 2 | awk '{print $1}' | tac | xargs git cherry-pick 2>/dev/null || true
+      fi
       
       SUSFS4KSU="$ROOT/susfs4ksu"
       echo "SUSFS4KSU=$SUSFS4KSU" >> $GITHUB_ENV

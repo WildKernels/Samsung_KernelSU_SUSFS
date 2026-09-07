@@ -298,6 +298,7 @@ jobs:
         uses: ./.github/actions/susfs-patches
         with:
           nomount: ${{ inputs.nomount }}
+          flavor: ${{ inputs.root_flavor }}
           susfs_commit: ${{ steps.susfs-cm.outputs.commit }}
 
       - name: Add Zeromount
