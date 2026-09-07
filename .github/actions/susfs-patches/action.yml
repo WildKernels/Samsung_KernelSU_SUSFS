@@ -45,7 +45,20 @@ runs:
    - name: Apply to KSUN
      shell: bash
      run: |
-       echo "SUSFS prepared at $SUSFS4KSU"
+       # Tiann KernelSU does not ship SUSFS: apply the enable patch to the
+       # root checkout. Next and ReSukiSU already include SUSFS, skip them.
+       if [ "${{ inputs.flavor }}" = "kernelsu" ]; then
+         PATCH="$SUSFS4KSU/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch"
+         if [ ! -f "$PATCH" ]; then
+           echo "Missing 10_enable_susfs_for_ksu.patch at $PATCH" >&2
+           exit 1
+         fi
+         echo "Applying SUSFS enable patch to KernelSU checkout at $ROOT_DIR"
+         git -C "$ROOT_DIR" apply --check "$PATCH"
+         git -C "$ROOT_DIR" apply "$PATCH"
+       else
+         echo "SUSFS prepared at $SUSFS4KSU (flavor ${{ inputs.flavor }} ships its own SUSFS)"
+       fi
        
    - name: Copy required files
      shell: bash
