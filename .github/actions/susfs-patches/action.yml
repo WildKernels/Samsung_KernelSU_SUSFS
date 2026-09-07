@@ -118,4 +118,5 @@ runs:
         --enable CONFIG_KSU_SUSFS_ENABLE_LOG \
         --enable CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
         --enable CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
-        --enable CONFIG_KSU_SUSFS_SUS_MAP
+        --enable CONFIG_KSU_SUSFS_SUS_MAP \
+        --enable CONFIG_KSU_SUSFS_OPEN_REDIRECT
