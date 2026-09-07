@@ -1,9 +1,6 @@
 name: apply susfs patches
 description: apply susfs patches
 inputs:
- nomount:
-  description: 'nomount'
-  required: true
  flavor:
   description: 'root flavor (kernelsu, next, resukisu) - pershoot commits only apply to next'
   required: false
@@ -113,9 +110,3 @@ runs:
      shell: bash
      run: |
       "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_KSU_SUSFS
-
-   - name: remove open redirect if nomount is enabled
-     if: inputs.nomount == 'true'
-     shell: bash
-     run: |
-      "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --disable CONFIG_KSU_SUSFS_OPEN_REDIRECT
