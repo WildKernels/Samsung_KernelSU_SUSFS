@@ -109,4 +109,13 @@ runs:
    - name: add ksu-susfs to config
      shell: bash
      run: |
-      "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_KSU_SUSFS
+      "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" \
+        --enable CONFIG_KSU_SUSFS \
+        --enable CONFIG_KSU_SUSFS_SUS_PATH \
+        --enable CONFIG_KSU_SUSFS_SUS_MOUNT \
+        --enable CONFIG_KSU_SUSFS_SUS_KSTAT \
+        --enable CONFIG_KSU_SUSFS_SPOOF_UNAME \
+        --enable CONFIG_KSU_SUSFS_ENABLE_LOG \
+        --enable CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS \
+        --enable CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG \
+        --enable CONFIG_KSU_SUSFS_SUS_MAP
