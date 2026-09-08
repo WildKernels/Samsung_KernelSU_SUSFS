@@ -32,7 +32,7 @@ runs:
 
      if [[ $BRANCH == SM-A055* || $BRANCH == SM-X926B* ]]; then
       chmod +x build_kernel.sh
-      env $SCRIPT_LTO ./build_kernel.sh || true
+      env $SCRIPT_LTO ./build_kernel.sh
      elif [[ $BRANCH == SM-S926* ]]; then
        #tools/bazel run --nocheck_bzl_visibility --config=stamp --sandbox_debug --verbose_failures --debug_make_verbosity=I //projects/s5e9945:s5e9945_user_dist
        tools/bazel build --nocheck_bzl_visibility --config=stamp --sandbox_debug --verbose_failures --debug_make_verbosity=I $BAZEL_LTO //projects/s5e9945:s5e9945_user
@@ -42,10 +42,10 @@ runs:
      elif [[ $BRANCH == SM-S938B* ]]; then
       sed -i '/drivers\/net\/usb\/smsc75xx\.ko/d;/drivers\/net\/usb\/smsc95xx\.ko/d' kernel_platform/common/modules.bzl
       chmod +x build_kernel_GKI.sh
-      env $SCRIPT_LTO ./build_kernel_GKI.sh || true
+      env $SCRIPT_LTO ./build_kernel_GKI.sh
      elif [[ $KERNEL_VER == 6.* ]]; then
       chmod +x build_kernel_GKI.sh
-      env $SCRIPT_LTO ./build_kernel_GKI.sh || true
+      env $SCRIPT_LTO ./build_kernel_GKI.sh
      elif [[ -d kernel_platform ]]; then
       cd kernel_platform
       tools/bazel build $BAZEL_LTO //common:kernel_aarch64
@@ -68,12 +68,12 @@ runs:
      cd "$CONFIG"
      if [[ -f build_kernel_GKI.sh ]]; then
       chmod +x build_kernel_GKI.sh
-      env $SCRIPT_LTO ./build_kernel_GKI.sh || true
+      env $SCRIPT_LTO ./build_kernel_GKI.sh
      elif [[ -f build_kernel.sh ]]; then
       sudo apt update
       sudo apt-get install -y libyaml-dev
       chmod +x build_kernel.sh
-      env $SCRIPT_LTO ./build_kernel.sh || true
+      env $SCRIPT_LTO ./build_kernel.sh
      fi
      
      #if [[ $BRANCH == SM-S928B* || "$BRANCH" == "SM-S938B-Oneui7" || "$BRANCH" == "SM-S931B-Oneui8" || "$BRANCH" == "SM-F741B-Oneui8" || "$BRANCH" == "SM-X710-Oneui6.1.1" ]]; then
