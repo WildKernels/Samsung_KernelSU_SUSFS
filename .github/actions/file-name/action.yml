@@ -9,10 +9,6 @@ inputs:
   description: 'variant'
   required: false
   default: ""
- ksun:
-  description: 'ksun (deprecated)'
-  required: false
-  default: "true"
  susfs:
   description: 'susfs'
   required: true

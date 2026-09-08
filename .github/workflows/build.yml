@@ -366,7 +366,6 @@ jobs:
         with:
          root_flavor: ${{ inputs.root_flavor }}
          variant: ${{ inputs.variant }}
-         ksun: "true"
          susfs: ${{ inputs.susfs }}
          zeromount: ${{ inputs.zeromount }}
          nomount: ${{ inputs.nomount }}
