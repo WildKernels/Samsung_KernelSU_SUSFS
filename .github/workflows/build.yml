@@ -343,7 +343,10 @@ jobs:
         uses: ./.github/actions/optimization
 
       - name: Fix WiFi and Bluetooth on Samsung 6.6 GKI devices
-        if: ${{ env.KERNEL_VER == '6.6' }}
+        # TEMP-DISABLED 2026-09-08: stock Samsung shouldn't need this; testing
+        # whether the kdp modpost failure goes away without it. Re-enable by
+        # restoring: if: ${{ env.KERNEL_VER == '6.6' }}
+        if: false
         uses: ./.github/actions/6.6-fix
 
       - name: temp fix for m55 bootloop maybe
