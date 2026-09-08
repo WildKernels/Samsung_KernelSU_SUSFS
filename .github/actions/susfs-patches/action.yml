@@ -82,7 +82,7 @@ runs:
      shell: bash
      run: |
       cd "$COMMON"
-      patch -p1 < 50_add_susfs_in_gki-$ANDROID_VER-$KERNEL_VER.patch
+      patch -p1 < 50_add_susfs_in_gki-$ANDROID_VER-$KERNEL_VER.patch || true
       rm -rf 50_add_susfs_in_gki-$ANDROID_VER-$KERNEL_VER.patch
       shopt -s nullglob
       patches=("$KERNEL_PATCHES/samsung/$BRANCH"/*.patch)
