@@ -56,7 +56,7 @@ runs:
          *) VARIANT_LABEL="KSUN" ;;
        esac
      fi
-     FILE_NAME="${ARTIFACT_BASE}-${VARIANT_LABEL}"
+     FILE_NAME="${ARTIFACT_BASE}-${VARIANT_LABEL}${KSU_VERSION}"
      [[ "${{ inputs.susfs }}" == "true" ]] && FILE_NAME="${FILE_NAME}-SUSFS"
      [[ "${{ inputs.zeromount }}" == "true" ]] && FILE_NAME="${FILE_NAME}-ZM"
      [[ "${{ inputs.nomount }}" == "true" ]] && FILE_NAME="${FILE_NAME}-NM"
