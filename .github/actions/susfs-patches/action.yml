@@ -106,6 +106,24 @@ runs:
           echo "Added page_size_compat.h include"
         fi
        
+   - name: fix with_policy static on 6.6+ (port from GKI)
+     shell: bash
+     run: |
+      if [ "$(printf '%s\n' "6.6" "$KERNEL_VER" | sort -V | head -n1)" = "6.6" ]; then
+        echo "[*] KVER $KERNEL_VER >= 6.6, stripping static from with_policy helpers"
+        for f in $(find "$COMMON" -name selinux_hide.c 2>/dev/null); do
+          if grep -q "^static int security_context_to_sid_with_policy" "$f"; then
+            echo "[*] Stripping static from $f helpers"
+            sed -i 's/^static int security_context_to_sid_with_policy/int security_context_to_sid_with_policy/g' "$f"
+            sed -i 's/^static int security_sid_to_context_with_policy/int security_sid_to_context_with_policy/g' "$f"
+            sed -i 's/^static void security_compute_av_user_with_policy/void security_compute_av_user_with_policy/g' "$f"
+            echo "[+] Stripped static from $f"
+          fi
+        done
+      else
+        echo "[-] KVER $KERNEL_VER < 6.6, skipping"
+      fi
+
    - name: add ksu-susfs to config
      shell: bash
      run: |
