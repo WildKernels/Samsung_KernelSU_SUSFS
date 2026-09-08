@@ -41,6 +41,7 @@ on:
         description: "Root Flavor"
         type: choice
         options:
+          - none
           - KernelSU-Next
           - KernelSU
           - ReSukiSU
