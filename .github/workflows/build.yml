@@ -235,7 +235,7 @@ jobs:
           done
 
       - name: Setup Selected Root Implementation
-        if: inputs.root_flavor != ''
+        if: inputs.root_flavor != 'none'
         uses: ./.github/actions/root-setup
         with:
           flavor: ${{ inputs.root_flavor }}
