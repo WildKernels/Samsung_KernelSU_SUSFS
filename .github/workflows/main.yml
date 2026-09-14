@@ -186,26 +186,26 @@ jobs:
             echo "$1=$2" >> "$GITHUB_OUTPUT"
           }
           # Audited pins - kept in sync with GKI_KernelSU_SUSFS dev
-          PIN_NOMOUNT="9a1431782f390453de54610fb91bdad03eab5b43"
-          PIN_KERNELSU="e38512f1255ea454d34cc2008d2ef7932547fad6"
-          PIN_RESUKISU="0b5efe9e0102c43ca5c41174d500f5a7080cd0c7"
+          PIN_NOMOUNT="7919faf2ab574110e388a4f444e5fef909c24e16"
+          PIN_KERNELSU="e23e035ad168ef13da86970f689dcab062e520de"
+          PIN_RESUKISU="833edb0e8e4bc11ac8e976edd7de42da6bdc5bd2"
           declare -A PIN_SUSFS=(
-            [susfs_commit_android12_5_10]="ec785f47d49f7b3871ca9356f450411020af7017"
-            [susfs_commit_android13_5_10]="ed3d6d9c9a2652e1c70f153f5358701e996d646c"
-            [susfs_commit_android13_5_15]="bca0d2333c1a7d717e7278b019d7af7ba1d16005"
-            [susfs_commit_android14_5_15]="d54b51724afa912c4c99bb99731354ce934d1889"
-            [susfs_commit_android14_6_1]="4fc9c1898ea66f51847cdbc0d1473ea4ef525a70"
-            [susfs_commit_android15_6_6]="937215cb3a1b1f333d764c366c7a49972fa8e7a0"
-            [susfs_commit_android16_6_12]="7d91da2d2ce056d1abf378d9199aaf1072d37ab0"
+            [susfs_commit_android12_5_10]="85a60092ea3a0768079e2a23672c993995b642fd"
+            [susfs_commit_android13_5_10]="dd94c3a166179fed554b53665d37a41bfec3d00e"
+            [susfs_commit_android13_5_15]="e126882055892c6f8767ff3bd2ddc31abc80a59d"
+            [susfs_commit_android14_5_15]="300c034bdfd473da70504e17477213c3231699a2"
+            [susfs_commit_android14_6_1]="05f201978bdbd5d08f842e0a2a6e0f2ff0912787"
+            [susfs_commit_android15_6_6]="01677642e6ade3b9e56e0a8660192a664dad79e9"
+            [susfs_commit_android16_6_12]="634757955537bf77074eeeb2943728bc77dff0e9"
           )
           declare -A PIN_SUSFS_RESUKISU=(
-            [susfs_commit_android12_5_10]="ec785f47d49f7b3871ca9356f450411020af7017"
-            [susfs_commit_android13_5_10]="ed3d6d9c9a2652e1c70f153f5358701e996d646c"
-            [susfs_commit_android13_5_15]="bca0d2333c1a7d717e7278b019d7af7ba1d16005"
-            [susfs_commit_android14_5_15]="d54b51724afa912c4c99bb99731354ce934d1889"
-            [susfs_commit_android14_6_1]="4fc9c1898ea66f51847cdbc0d1473ea4ef525a70"
-            [susfs_commit_android15_6_6]="937215cb3a1b1f333d764c366c7a49972fa8e7a0"
-            [susfs_commit_android16_6_12]="7d91da2d2ce056d1abf378d9199aaf1072d37ab0"
+            [susfs_commit_android12_5_10]="85a60092ea3a0768079e2a23672c993995b642fd"
+            [susfs_commit_android13_5_10]="dd94c3a166179fed554b53665d37a41bfec3d00e"
+            [susfs_commit_android13_5_15]="e126882055892c6f8767ff3bd2ddc31abc80a59d"
+            [susfs_commit_android14_5_15]="300c034bdfd473da70504e17477213c3231699a2"
+            [susfs_commit_android14_6_1]="05f201978bdbd5d08f842e0a2a6e0f2ff0912787"
+            [susfs_commit_android15_6_6]="01677642e6ade3b9e56e0a8660192a664dad79e9"
+            [susfs_commit_android16_6_12]="634757955537bf77074eeeb2943728bc77dff0e9"
           )
           pick() {
             local pinned="$1" repo="$2" ref="$3"
