@@ -134,7 +134,7 @@ jobs:
 
     env:
       GH_TOKEN: ${{ github.token }}
-      RELEASE_NAME: "Samsung GKI Kernels With KSUN v3.3.0 & SUSFS v2.3.0"
+      RELEASE_NAME: "Samsung GKI Kernels With KSUN v3.4.0 & SUSFS v2.3.0"
       RELEASE_BODY: ""
     steps:
       - name: Free Disk Space
@@ -199,7 +199,7 @@ jobs:
 
           if [ "${{ inputs.ksun }}" = "true" ]; then
           cat <<'EOF' >> release_body.md
-          -> KernelSU-Next v3.3.0 - https://github.com/KernelSU-Next/KernelSU-Next
+          -> KernelSU-Next v3.4.0 - https://github.com/KernelSU-Next/KernelSU-Next
           NOTE: For kernel integration I am using pershoots fork of KernelSU-next. He has claimed that even though everything works fine, the dev has warned that this is not production ready!
           EOF
           fi
