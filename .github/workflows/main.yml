@@ -81,6 +81,12 @@ on:
         type: boolean
         default: true
 
+      bore:
+        description: "BORE Scheduler"
+        required: false
+        type: boolean
+        default: true
+
       cache:
         description: "CCache"
         required: false
@@ -120,6 +126,7 @@ jobs:
       droidspace: ${{ inputs.droidspace }}
       ntsync: ${{ inputs.ntsync }}
       bbrv3: ${{ inputs.bbrv3 }}
+      bore: ${{ inputs.bore }}
       cache: ${{ inputs.cache }}
       ipv6_nat: ${{ inputs.ipv6_nat }}
       optimization: ${{ inputs.optimization }}
@@ -251,6 +258,12 @@ jobs:
           cat <<'EOF' >> release_body.md
           -> TCP BBRV3 (better TCP congestion and faster internet)
           -> CAKE and PIE qdisc Support - Better Net Schedulers
+          EOF
+          fi
+
+          if [ "${{ inputs.bore }}" = "true" ]; then
+          cat <<'EOF' >> release_body.md
+          -> BORE (Burst-Oriented Response Enhancer) CPU Scheduler v5.1.0 - Burst-time CPU scheduling for low latency and UI responsiveness
           EOF
           fi
 
