@@ -34,6 +34,9 @@ on:
       bbrv3:
         required: true
         type: string
+      bore:
+        required: false
+        type: string
       cache:
         required: true
         type: string
@@ -199,6 +202,7 @@ jobs:
       droidspace: ${{ inputs.droidspace }}
       ntsync: ${{ inputs.ntsync }}
       bbrv3: ${{ inputs.bbrv3 }}
+      bore: ${{ inputs.bore }}
       cache: ${{ inputs.cache }}
       ipv6_nat: ${{ inputs.ipv6_nat }}
       optimization: ${{ inputs.optimization }}

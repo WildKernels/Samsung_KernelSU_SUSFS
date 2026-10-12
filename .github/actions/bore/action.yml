@@ -1,0 +1,404 @@
+name: 'Apply BORE Scheduler'
+description: 'Download and apply the BORE scheduler patch with kABI/KMI preservation'
+
+inputs:
+  kernel_version:
+    description: 'Kernel version (e.g. 5.10, 6.1)'
+    required: false
+    type: string
+    default: ''
+  sublevel:
+    description: 'Kernel sublevel, or lts (X) - gates 5.10 API-era fixes'
+    required: false
+    type: string
+    default: ''
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Select BORE patch
+      id: pick
+      shell: bash
+      run: |
+        set -euo pipefail
+        VER="${{ inputs.kernel_version }}"
+        if [ -z "$VER" ]; then
+          VER="${KERNEL_VER:-}"
+        fi
+        if [ -z "$VER" ] && [ -n "${COMMON:-}" ] && [ -f "$COMMON/Makefile" ]; then
+          V=$(grep '^VERSION =' "$COMMON/Makefile" | awk '{print $3}')
+          P=$(grep '^PATCHLEVEL =' "$COMMON/Makefile" | awk '{print $3}')
+          VER="$V.$P"
+        fi
+
+        BORE_BASE="https://raw.githubusercontent.com/firelzrd/bore-scheduler/main/patches"
+
+        case "$VER" in
+          5.4|5.10|5.15)
+            URL="${BORE_BASE}/legacy/linux-5.15-bore/0001-linux5.15.y-bore5.1.0.patch"
+            FALLBACK_LOCAL=".github/actions/bore/patches/0001-linux5.15.y-bore5.1.0.patch" ;;
+          6.1)
+            URL="${BORE_BASE}/legacy/linux-6.1-bore/0001-linux6.1.y-bore5.1.0.patch"
+            FALLBACK_LOCAL="" ;;
+          6.6)
+            URL=".github/actions/bore/patches/0001-linux6.6.67-bore-5.9.6.patch"
+            URL_IS_LOCAL="true"
+            FALLBACK_LOCAL="" ;;
+          6.12|6.18)
+            LATEST=""
+            for attempt in 1 2 3 4 5; do
+              HTTP=$(curl -sSL -o /tmp/bore_listing.json -w '%{http_code}' \
+                "https://api.github.com/repos/firelzrd/bore-scheduler/contents/patches/stable") || HTTP=""
+              if [ "$HTTP" = "200" ]; then
+                NAMES=$(grep -o '"name": *"0001-linux'"${VER}"'[^"]*\.patch"' /tmp/bore_listing.json \
+                  | sed 's/"name": *"//;s/"$//' | sort -V)
+                LATEST=$(printf '%s\n' "$NAMES" | tail -1)
+                break
+              fi
+              echo "patches/stable listing attempt $attempt/5 got HTTP ${HTTP:-none}; backing off..." >&2
+              sleep $((attempt * 15))
+            done
+            if [ "$HTTP" != "200" ]; then
+              echo "ERROR: could not list firelzrd/bore-scheduler patches/stable/ (HTTP $HTTP after 5 attempts)" >&2
+              exit 1
+            fi
+            if [ -z "$LATEST" ]; then
+              echo "ERROR: no BORE patch found for ${VER} in firelzrd/bore-scheduler patches/stable/" >&2
+              exit 1
+            fi
+            echo "Resolved ${VER} BORE patch: ${LATEST}"
+            URL="${BORE_BASE}/stable/${LATEST}"
+            FALLBACK_LOCAL="" ;;
+          *)
+            echo "No BORE patch mapped for kernel ${VER}; skipping."
+            echo "url=" >> "$GITHUB_OUTPUT"
+            exit 0
+            ;;
+        esac
+
+        echo "BORE patch for kernel ${VER}: ${URL##*/}"
+        echo "url=${URL}" >> "$GITHUB_OUTPUT"
+        echo "local=${URL_IS_LOCAL:-false}" >> "$GITHUB_OUTPUT"
+        echo "fallback=${FALLBACK_LOCAL:-}" >> "$GITHUB_OUTPUT"
+
+    - name: Download BORE patch
+      id: fetch
+      if: steps.pick.outputs.url != ''
+      shell: bash
+      run: |
+        set -euo pipefail
+        mkdir -p "${GITHUB_WORKSPACE}/kernel_patches/bore"
+        OUT="${GITHUB_WORKSPACE}/kernel_patches/bore/0001-bore.patch"
+
+        if [ "${{ steps.pick.outputs.local }}" = "true" ]; then
+          cp "${GITHUB_WORKSPACE}/${{ steps.pick.outputs.url }}" "$OUT"
+        else
+          if ! curl -fsSL --retry 5 --retry-delay 5 --retry-all-errors --connect-timeout 30 \
+            "${{ steps.pick.outputs.url }}" -o "$OUT"; then
+            FALLBACK="${{ steps.pick.outputs.fallback }}"
+            if [ -n "$FALLBACK" ] && [ -f "${GITHUB_WORKSPACE}/$FALLBACK" ]; then
+              echo "curl failed, using vendored patch: $FALLBACK"
+              cp "${GITHUB_WORKSPACE}/$FALLBACK" "$OUT"
+            else
+              echo "Failed to download BORE patch and no local fallback available." >&2
+              exit 1
+            fi
+          fi
+        fi
+        echo "downloaded=true" >> "$GITHUB_OUTPUT"
+
+    - name: Verify BORE patch provenance
+      id: verify
+      if: steps.pick.outputs.url != '' && steps.fetch.outputs.downloaded != 'false'
+      shell: bash
+      run: |
+        set -euo pipefail
+        PATCH="${GITHUB_WORKSPACE}/kernel_patches/bore/0001-bore.patch"
+
+        [ -s "$PATCH" ] || { echo "ERROR: downloaded BORE patch is empty" >&2; exit 1; }
+
+        if head -1 "$PATCH" | grep -q '^From [0-9a-f]\{40\} Mon Sep 17 00:00:00 2001$'; then
+          AUTHOR=$(head -20 "$PATCH" | sed -n 's/^From: //p' | head -1)
+          echo "BORE patch author: ${AUTHOR}"
+        elif head -1 "$PATCH" | grep -q '^diff --git a/include/linux/sched.h'; then
+          echo "BORE patch: vendored diff (no mail headers)"
+        else
+          echo "ERROR: unrecognized patch format" >&2
+          exit 1
+        fi
+
+        echo "patch_path=${PATCH}" >> "$GITHUB_OUTPUT"
+
+    - name: Apply BORE patch
+      if: steps.pick.outputs.url != '' && steps.fetch.outputs.downloaded != 'false'
+      shell: bash
+      env:
+        PATCH: ${{ steps.verify.outputs.patch_path }}
+      run: |
+        set -euo pipefail
+        cd "$COMMON"
+
+        if [ -z "$PATCH" ]; then
+          echo "ERROR: PATCH path is empty; the verify step did not run." >&2
+          exit 1
+        fi
+        if [ ! -s "$PATCH" ]; then
+          echo "ERROR: BORE patch not found at $PATCH" >&2
+          exit 1
+        fi
+
+        if ! patch -p1 -F3 --forward --no-backup-if-mismatch < "$PATCH"; then
+          echo "WARNING: BORE patch did not apply cleanly." >&2
+          find . -name '*.rej' -newer "$PATCH" 2>/dev/null | while read -r r; do
+            echo "  ${r#./}" >&2
+          done
+        fi
+
+        echo "BORE patch applied."
+
+    - name: Forward-declare task_of() (5.10 and below)
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "$COMMON"
+
+        if ! grep -q 'bore: task_of fwd' kernel/sched/fair.c; then
+          EARLY=$(grep -n '^#include' kernel/sched/fair.c | awk -F: '$1 < 100' | tail -1 | cut -d: -f1)
+          sed -i "${EARLY}a\\/* bore: task_of fwd - defined below, in scope too late */\nstatic inline struct task_struct *task_of(struct sched_entity *se);" kernel/sched/fair.c
+        fi
+        grep -n 'bore: task_of fwd' kernel/sched/fair.c | head -2
+
+    - name: Move BORE fields into kABI slots (preserve KMI)
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "$COMMON"
+
+        python3 "${GITHUB_WORKSPACE}/.github/scripts/bore_kabi_612.py" \
+          include/linux/sched.h || rc=$?
+        if [ "${rc:-0}" != "0" ]; then
+          if grep -q 'struct bore_ctx' include/linux/sched.h; then
+            echo "NOTE: 7.x-generation BORE (bore_ctx in task_struct); sched_entity untouched" >&2
+          elif grep -q 'struct sched_burst_cache child_burst;' include/linux/sched.h; then
+            echo "WARNING: 6.6-shape BORE fields present" >&2
+          else
+            echo "ERROR: kABI relocation failed and the tree is not the 6.6 shape" >&2
+            exit "${rc}"
+          fi
+        fi
+
+        grep -A9 'bore-kabi: burst_' include/linux/sched.h | head -10 || true
+
+    - name: Move 6.6 burst state out-of-line (fix sched_entity KMI shift)
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "$COMMON"
+
+        if ! grep -q 'struct sched_burst_cache child_burst;' include/linux/sched.h 2>/dev/null; then
+          echo "No inline sched_entity burst fields (5.1.0/7.x generations); nothing to do."
+          exit 0
+        fi
+
+        python3 "${GITHUB_WORKSPACE}/.github/scripts/bore66_state.py" \
+          include/linux/sched.h
+        python3 "${GITHUB_WORKSPACE}/.github/scripts/bore66_flat.py" \
+          kernel/sched/bore.c kernel/sched/fair.c kernel/fork.c kernel/sched/debug.c
+
+        echo "=== task_struct slot 3 ==="
+        grep -B1 -A2 'bore-kabi: 6.6 burst state' include/linux/sched.h | head -5
+        echo "=== residual accessor check ==="
+        if grep -rn -- '->se\.burst_\|se->burst_\|P(se\.burst' \
+            kernel/sched/fair.c kernel/sched/debug.c kernel/sched/bore.c kernel/fork.c 2>/dev/null; then
+          echo "ERROR: residual inline-form BORE accessors remain" >&2
+          exit 1
+        fi
+        echo "clean: no residual inline-form accessors"
+
+    - name: Move 7.x bore_ctx into task_struct KABI slots (fix bootloops)
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "$COMMON"
+
+        if ! grep -q 'struct bore_ctx' include/linux/sched.h 2>/dev/null; then
+          echo "No bore_ctx in task_struct (5.x/6.6 generations); nothing to do."
+          exit 0
+        fi
+
+        python3 "${GITHUB_WORKSPACE}/.github/scripts/bore_task_slots_7.py" \
+          include/linux/sched.h
+
+        FILES=$(grep -rl -- '->bore\.\|struct bore_ctx \*ctx' \
+          include kernel 2>/dev/null || true)
+        if [ -n "$FILES" ]; then
+          python3 "${GITHUB_WORKSPACE}/.github/scripts/bore_flat_accessors_7.py" \
+            $FILES
+        fi
+
+        echo "=== task_struct tail after relocation ==="
+        grep -A7 'bore-kabi: bore_ctx lives' include/linux/sched.h | head -8
+
+    - name: Fix BORE declaration order (6.1 and below)
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "$COMMON"
+
+        sed -i '/^\tif (!entity_is_task(se)) return;$/{N;N;N;N;s|\tif (!entity_is_task(se)) return;\n\tstruct task_struct \*p = task_of(se);\n\tu8 prio = p->static_prio - MAX_RT_PRIO;\n\tu8 prev_prio = min(39, prio + se->burst_score);|\tstruct task_struct *p;\n\tu8 prio, prev_prio, new_prio;\n\n\tif (!entity_is_task(se)) return;\n\tp = task_of(se);\n\tprio = p->static_prio - MAX_RT_PRIO;\n\tprev_prio = min(39, prio + se->burst_score);|}' kernel/sched/fair.c
+
+        sed -i 's|^\tu8 new_prio = min(39, prio + se->burst_score);$|\tnew_prio = min(39, prio + se->burst_score);|' kernel/sched/fair.c
+
+        if [ -f kernel/sched/bore.c ]; then
+          sed -i '/^void update_burst_score(struct sched_entity \*se) {$/{N;N;N;s|void update_burst_score(struct sched_entity \*se) {\n\tif (!entity_is_task(se)) return;\n\tstruct task_struct \*p = task_of(se);\n\tu8 prev_prio = effective_prio(p);|void update_burst_score(struct sched_entity *se) { /* bore: decls hoisted */\n\tstruct task_struct *p;\n\tu8 prev_prio, burst_score, new_prio;\n\n\tif (!entity_is_task(se)) return;\n\tp = task_of(se);\n\tprev_prio = effective_prio(p);|}' kernel/sched/bore.c
+          sed -i '/^void update_burst_score/,/^}/ s|^\tu8 burst_score = 0;$|\tburst_score = 0;|' kernel/sched/bore.c
+          sed -i '/^void update_burst_score/,/^}/ s|^\tu8 new_prio = effective_prio(p);$|\tnew_prio = effective_prio(p);|' kernel/sched/bore.c
+          sed -i '/^void restart_burst_rescale_deadline/,/^}/ s|^\tu8 prev_prio = effective_prio(p);$|\tu8 prev_prio = effective_prio(p), new_prio;|' kernel/sched/bore.c
+          sed -i '/^void restart_burst_rescale_deadline/,/^}/ s|^\tu8 new_prio = effective_prio(p);$|\tnew_prio = effective_prio(p);|' kernel/sched/bore.c
+        else
+          echo "bore.c not present (5.1.0-generation patch); bore.c seds skipped."
+        fi
+
+        sed -n '/static void update_burst_score/,/^}/p' kernel/sched/fair.c | head -8
+        if [ -f kernel/sched/bore.c ]; then
+          sed -n '/^void update_burst_score/,/^}/p' kernel/sched/bore.c | head -12
+        fi
+
+    - name: Fix 6.6 sysctl reject (Android base_slice block)
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "$COMMON"
+
+        if grep -q 'bore: base_slice block' kernel/sched/fair.c; then
+          echo "6.6 sysctl block already repaired; skipping."
+          exit 0
+        fi
+
+        if grep -q 'nsecs_per_tick' kernel/sched/fair.c && \
+           ! grep -q 'static const unsigned int nsecs_per_tick' kernel/sched/fair.c; then
+          echo "nsecs_per_tick used but undeclared - repairing sysctl block."
+        else
+          echo "NOTE: no missing BORE sysctl declarations; nothing to do."
+          exit 0
+        fi
+
+        TUNE_LINE=$(grep -n '^unsigned int sysctl_sched_tunable_scaling' kernel/sched/fair.c | cut -d: -f1 || true)
+        if [ -n "$TUNE_LINE" ]; then
+          sed -i "${TUNE_LINE}i\\
+        /* bore: tunable_scaling default */\\
+        #ifdef CONFIG_SCHED_BORE\\
+        unsigned int sysctl_sched_tunable_scaling = SCHED_TUNABLESCALING_NONE;\\
+        #else // !CONFIG_SCHED_BORE" kernel/sched/fair.c
+          TUNE_LINE=$(grep -n '^unsigned int sysctl_sched_tunable_scaling = SCHED_TUNABLESCALING_LOG' kernel/sched/fair.c | cut -d: -f1 || true)
+          if [ -n "$TUNE_LINE" ]; then
+            sed -i "${TUNE_LINE}a\\
+        #endif // CONFIG_SCHED_BORE" kernel/sched/fair.c
+          fi
+        else
+          echo "NOTE: tunable_scaling declaration not found; skipping its wrap."
+        fi
+
+        SLICE_LINE=$(grep -n '^unsigned int sysctl_sched_base_slice' kernel/sched/fair.c | head -1 | cut -d: -f1 || true)
+        if [ -z "$SLICE_LINE" ]; then
+          echo "ERROR: stock sysctl block not found; aborting so we do not mangle fair.c" >&2
+          exit 1
+        fi
+        echo "stock base_slice at line $SLICE_LINE"
+
+        sed -i "${SLICE_LINE}i\\
+        /* bore: base_slice block - GKI variant of the rejected hunk */\\
+        #ifdef CONFIG_SCHED_BORE\\
+        static const unsigned int nsecs_per_tick       = 1000000000ULL / HZ;\\
+        unsigned int sysctl_sched_min_base_slice       = CONFIG_MIN_BASE_SLICE_NS;\\
+        __read_mostly uint sysctl_sched_base_slice     = nsecs_per_tick;\\
+        EXPORT_SYMBOL_GPL(sysctl_sched_base_slice);\\
+        #else // !CONFIG_SCHED_BORE" kernel/sched/fair.c
+
+        EXPORT_LINE=$(grep -n '^EXPORT_SYMBOL_GPL(sysctl_sched_base_slice)' kernel/sched/fair.c | sed -n '2p' | cut -d: -f1 || true)
+        if [ -z "$EXPORT_LINE" ]; then
+          echo "ERROR: stock EXPORT_SYMBOL_GPL(sysctl_sched_base_slice) not found" >&2
+          exit 1
+        fi
+        sed -i "${EXPORT_LINE}a\\
+        #endif // CONFIG_SCHED_BORE" kernel/sched/fair.c
+
+        sed -i 's|^static unsigned int normalized_sysctl_sched_base_slice|static unsigned int normalized_sysctl_sched_base_slice __maybe_unused|' kernel/sched/fair.c
+
+        echo "=== repaired block ==="
+        sed -n "$((SLICE_LINE-2)),$((EXPORT_LINE+3))p" kernel/sched/fair.c
+
+    - name: Fix fuzz-spliced update_curr_bore block (6.12/6.18 7.0.0)
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "$COMMON"
+
+        if ! grep -q 'update_curr_bore' kernel/sched/fair.c 2>/dev/null; then
+          echo "No update_curr_bore call site (6.6/5.x generation or patch absent); nothing to do."
+          exit 0
+        fi
+
+        CALL_LINE=$(grep -n 'update_curr_bore(p, delta_exec);' kernel/sched/fair.c | head -1 | cut -d: -f1 || true)
+        if [ -z "$CALL_LINE" ]; then
+          exit 0
+        fi
+        IFDEF_LINE=$(grep -n '^#ifdef CONFIG_SCHED_BORE' kernel/sched/fair.c \
+                     | awk -F: -v c="$CALL_LINE" '$1 < c && c - $1 <= 2 {print $1}' | tail -1)
+
+        ABOVE=$((IFDEF_LINE - 1))
+        ABOVE_TXT=$(sed -n "${ABOVE}p" kernel/sched/fair.c)
+        if printf '%s' "$ABOVE_TXT" | grep -qE '^\s*(\*|/\*)'; then
+          echo "Detected fuzz-spliced BORE block inside a comment (line $IFDEF_LINE, above: $ABOVE_TXT)."
+          echo "Relocating the block to the correct anchor..."
+        else
+          echo "update_curr_bore block looks correctly anchored (above: $ABOVE_TXT); nothing to do."
+          exit 0
+        fi
+
+        sed -i "${IFDEF_LINE},$((CALL_LINE + 1))d" kernel/sched/fair.c
+
+        ANCHOR=$(grep -n $'\tif (entity_is_task(curr)) {' kernel/sched/fair.c \
+                 | awk -F: -v c="$CALL_LINE" '$1 < c' | tail -1 | cut -d: -f1)
+        if [ -z "$ANCHOR" ]; then
+          echo "ERROR: 'if (entity_is_task(curr)) {' anchor not found in update_curr(); refusing to guess." >&2
+          exit 1
+        fi
+        CALLER_ARG="p, delta_exec"
+        if ! grep -q 'struct task_struct \*p = task_of(curr);' kernel/sched/fair.c; then
+          CALLER_ARG="task_of(curr), delta_exec"
+        fi
+        sed -i "${ANCHOR}a\\
+        #ifdef CONFIG_SCHED_BORE\\
+        \t\tupdate_curr_bore(${CALLER_ARG});\\
+        #endif /* CONFIG_SCHED_BORE */" kernel/sched/fair.c
+
+        echo "=== update_curr() after repair ==="
+        sed -n "${ANCHOR},$((ANCHOR + 14))p" kernel/sched/fair.c
+
+    - name: Fix reweight_task call (5.10 2024-11+)
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "$COMMON"
+
+        if grep -q 'reweight_task(struct task_struct \*p, const struct load_weight \*lw)' kernel/sched/sched.h; then
+          if ! grep -q 'bore: reweight via load_weight' kernel/sched/fair.c; then
+            sed -i 's|^\t\treweight_task(p, new_prio);$|\t\t{\n\t\t\tstruct load_weight lw;\n\t\t\t/* bore: reweight via load_weight (upstream API changed) */\n\t\t\tlw.weight = scale_load(sched_prio_to_weight[new_prio]);\n\t\t\tlw.inv_weight = sched_prio_to_wmult[new_prio];\n\t\t\treweight_task(p, \&lw);\n\t\t}|' kernel/sched/fair.c
+          fi
+          grep -n 'bore: reweight via load_weight' kernel/sched/fair.c | head -2
+        else
+          echo "bore-reweight: old reweight_task(p, int prio) API; BORE's call is already correct"
+        fi
+
+    - name: Enable CONFIG_SCHED_BORE in defconfig
+      shell: bash
+      run: |
+        set -euo pipefail
+        cd "$COMMON"
+        "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_SCHED_BORE
+        if grep -q "CONFIG_MIN_BASE_SLICE_NS" "$COMMON/init/Kconfig" 2>/dev/null || grep -q "MIN_BASE_SLICE_NS" "$COMMON/kernel/sched/fair.c" 2>/dev/null; then
+          "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --set-val CONFIG_MIN_BASE_SLICE_NS 2000000 || true
+        fi
+        echo "CONFIG_SCHED_BORE enabled in $GKI_DEFCONFIG"
+        grep "CONFIG_SCHED_BORE" "$GKI_DEFCONFIG" || true

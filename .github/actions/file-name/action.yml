@@ -19,6 +19,9 @@ inputs:
  bbrv3:
   description: 'bbrv3'
   required: true
+ bore:
+  description: 'bore'
+  required: false
  droidspaces:
   description: 'droidspaces'
   required: true
@@ -51,6 +54,7 @@ runs:
      [[ "${{ inputs.nomount }}" == "true" ]] && FILE_NAME="${FILE_NAME}-NM"
      [[ "${{ inputs.bbg }}" == "true" ]] && FILE_NAME="${FILE_NAME}-BBG"
      [[ "${{ inputs.bbrv3 }}" == "true" ]] && FILE_NAME="${FILE_NAME}-BBRV3"
+     [[ "${{ inputs.bore }}" == "true" ]] && FILE_NAME="${FILE_NAME}-BORE"
      [[ "${{ inputs.droidspaces }}" == "true" ]] && FILE_NAME="${FILE_NAME}-DS"
      [[ "${{ inputs.ntsync }}" == "true" ]] && FILE_NAME="${FILE_NAME}-NTS"
      [[ "${{ inputs.ipv6_nat }}" == "true" ]] && FILE_NAME="${FILE_NAME}-IPv6_IP-set"

@@ -87,3 +87,29 @@ runs:
      patch -p1 < "$KERNEL_PATCHES/common/silence_system_logspam.patch"
      echo "Patching use_unlikely_wrap_cpufreq.patch"
      patch -p1 < "$KERNEL_PATCHES/common/use_unlikely_wrap_cpufreq.patch"
+
+  - name: apply performance defconfig optimizations
+    shell: bash
+    run: |
+     cd "$COMMON"
+     echo "Applying performance defconfig optimizations..."
+
+     # MGLRU (Multi-Gen LRU) - page reclaim optimization (if supported in tree)
+     if grep -q "config LRU_GEN" mm/Kconfig 2>/dev/null; then
+       echo "Enabling MGLRU..."
+       "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_LRU_GEN
+       "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_LRU_GEN_ENABLED
+     fi
+
+     # Compiler inlining optimization & suppress frame warning
+     "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_OPTIMIZE_INLINING
+     "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --set-val CONFIG_FRAME_WARN 0
+
+     # Modern ZSTD compression support for faster decompress / better compression ratio
+     if grep -q "config ZSTD_COMPRESS" lib/Kconfig 2>/dev/null || grep -q "config ZSTD_COMPRESS" lib/zstd/Kconfig 2>/dev/null; then
+       "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_ZSTD_COMPRESS
+       "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_ZSTD_DECOMPRESS
+     fi
+
+     # ZRAM enhancements
+     "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_ZRAM_WRITEBACK
