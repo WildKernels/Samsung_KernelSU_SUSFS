@@ -74,6 +74,30 @@ runs:
       sudo apt-get install -y libyaml-dev
       chmod +x build_kernel.sh
       env $SCRIPT_LTO ./build_kernel.sh || true
+     elif [[ $BRANCH == SM-S711B-L ]]; then
+      TOOLCHAIN_DIR="${TOOLCHAIN_DIR:-$PWD/toolchain/clang/host/linux-86/clang-r416183b}"
+      OUT_DIR="${OUT_DIR:-$PWD/out}"
+      DEFCONFIG="arch/arm64/configs/s5e9925_defconfig"
+      VARIANT_CONFIG="arch/arm64/configs/r11s.config"
+      JOBS="${JOBS:-$(nproc)}"
+      export ARCH=arm64
+      export SUBARCH=arm64
+      export LLVM=1
+      export LLVM_IAS=1
+      export CLANG_TRIPLE=aarch64-linux-gnu
+      export CROSS_COMPILE=aarch64-linux-gnu
+      export PATH="$TOOLCHAIN_DIR/bin:$PATH"
+      export CC=clang
+      mkdir -p "$OUT_DIR"
+      echo "== Merging $DEFCONFIG + $VARIANT_CONFIG=="
+      ./scripts/kconfig/merge_config.sh \
+      -m -O "$OUT_DIR \
+      "$DEFCONFIG" \
+      "$VARIANT_CONFIG"
+      echo "== Finalizing merged config (olddefconfig) =="
+      make O="$OUT_DIR" ARCH=arm64 olddefconfig
+      echo "Building Kernel"
+      make O="$OUT_DIR" ARCH=arm64 -j"$JOBS" Image
      fi
      
      #if [[ $BRANCH == SM-S928B* || "$BRANCH" == "SM-S938B-Oneui7" || "$BRANCH" == "SM-S931B-Oneui8" || "$BRANCH" == "SM-F741B-Oneui8" || "$BRANCH" == "SM-X710-Oneui6.1.1" ]]; then
