@@ -4,7 +4,13 @@ description: "initialize and download the samsung kernel"
 runs:
  using: composite
  steps:
-   - name: Clone Kernel Source
+   - name: Clone ONEUI Kernel Source
+     if: env.BRANCH != '*LOS'
      shell: bash
      run: |
       git clone --depth 1 -b $BRANCH --single-branch https://github.com/WildKernels/Samsung_Kernels.git $CONFIG
+
+   - name: Clone LINEAGEOS Kernel Source
+     shell: bash
+     run: |
+      git clone --depth 1 -b $BRANCH --single-branch https://github.com/LineageOS/android_kernel_samsung_s5e9925.git $CONFIG
