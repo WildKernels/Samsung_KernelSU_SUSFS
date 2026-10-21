@@ -18,6 +18,6 @@ runs:
 
       #setup LOS toolchain
       cd "$CONFIG"
-      mkdir toolchain/clang/host/linux-x86
+      mkdir -p toolchain/clang/host/linux-x86
       cd toolchain/clang/host/linux-x86
       git clone --depth 1 https://github.com/LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b.git clang-r416183b
