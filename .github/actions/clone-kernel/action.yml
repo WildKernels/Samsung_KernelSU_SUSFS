@@ -14,3 +14,9 @@ runs:
      shell: bash
      run: |
       git clone --depth 1 -b $BRANCH --single-branch https://github.com/LineageOS/android_kernel_samsung_s5e9925.git $CONFIG
+
+      #setup LOS toolchain
+      cd "$CONFIG"
+      mkdir toolchain/clang/host/linux-x86
+      cd toolchain/clang/host/linux-x86
+      git clone --depth 1 https://github.com/LineageOS/android_prebuilts_clang_kernel_linux-x86_clang-r416183b.git clang-r416183b
