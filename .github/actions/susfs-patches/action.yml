@@ -61,6 +61,12 @@ runs:
          sed -i '/#include "internal.h"/a #include <trace/hooks/blk.h>' fs/namespace.c
        fi
 
+       #move fslog.h for susfs patch
+       if [[ $BRANCH == *LOS ]]; then
+        sed -i '/#include <linux\/fslog.h>/d; /#include <linux\/security.h>/a #include <linux/fslog.h>' fs/namespace.c
+        sed -i '/#include <linux\/cn_proc.h>/d; /#include <linux\/slab.h>/a #include <linux/cn_proc.h>' fs/proc/base.c
+       fi
+
        #remove kdp_ns section for susfs patch
        sed -i '/copy_flags = CL_COPY_UNBINDABLE | CL_EXPIRE;/,/#endif/ {
         /#ifdef CONFIG_KDP_NS/,/#endif/ {
