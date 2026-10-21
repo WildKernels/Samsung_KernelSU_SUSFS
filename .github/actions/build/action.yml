@@ -74,7 +74,7 @@ runs:
       sudo apt-get install -y libyaml-dev
       chmod +x build_kernel.sh
       env $SCRIPT_LTO ./build_kernel.sh || true
-     elif [[ $BRANCH == SM-S711B-L ]]; then
+     elif [[ $BRANCH == SM-S711B-L* ]]; then
       TOOLCHAIN_DIR="${TOOLCHAIN_DIR:-$PWD/toolchain/clang/host/linux-x86/clang-r416183b}"
       OUT_DIR="${OUT_DIR:-$PWD/out}"
       DEFCONFIG="arch/arm64/configs/s5e9925_defconfig"
