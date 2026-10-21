@@ -5,6 +5,7 @@ runs:
   using: composite
   steps:
     - name: Locate and extract kernel version
+      if: env.BRANCH != '*LOS'
       shell: bash
       run: |
         REPO="WildKernels/Samsung_Kernels"
@@ -25,6 +26,81 @@ runs:
 
         for file in "${POSSIBLE_MAKEFILES[@]}"; do
           RAW_URL="https://raw.githubusercontent.com/$REPO/$BRANCH/$file"
+
+          echo "Checking: $file"
+
+          CONTENT=$(curl -fsSL "$RAW_URL" || true)
+
+          if echo "$CONTENT" | grep -E '^VERSION[[:space:]]*=' >/dev/null; then
+            MAKEFILE_PATH="$file"
+            MAKEFILE_CONTENT="$CONTENT"
+            break
+          fi
+        done
+
+        if [ -z "$MAKEFILE_PATH" ]; then
+          echo "::error::Could not find kernel Makefile"
+          exit 1
+        fi
+
+        echo "Found kernel Makefile: $MAKEFILE_PATH"
+
+        VERSION=$(echo "$MAKEFILE_CONTENT" | grep -E '^VERSION[[:space:]]*=' | awk '{print $3}' | head -n1)
+        PATCHLEVEL=$(echo "$MAKEFILE_CONTENT" | grep -E '^PATCHLEVEL[[:space:]]*=' | awk '{print $3}' | head -n1)
+
+        if [ -z "$VERSION" ] || [ -z "$PATCHLEVEL" ]; then
+          echo "::error::Could not extract kernel version from $MAKEFILE_PATH"
+          exit 1
+        fi
+
+        KERNEL_VERSION="$VERSION.$PATCHLEVEL"
+
+        case "$KERNEL_VERSION" in
+          5.10)
+            ANDROID_VERSION="android12"
+            ;;
+          5.15)
+            ANDROID_VERSION="android13"
+            ;;
+          6.1)
+            ANDROID_VERSION="android14"
+            ;;
+          6.6)
+            ANDROID_VERSION="android15"
+            ;;
+          *)
+            ANDROID_VERSION="unknown"
+            ;;
+        esac
+
+        echo "Android: $ANDROID_VERSION"
+        echo "Kernel: $KERNEL_VERSION"
+
+        echo "ANDROID_VER=$ANDROID_VERSION" >> "$GITHUB_ENV"
+        echo "KERNEL_VER=$KERNEL_VERSION" >> "$GITHUB_ENV"
+
+    - name: Locate and extract kernel version
+      if: env.BRANCH == '*LOS'
+      shell: bash
+      run: |
+        REPO="LineageOS/android_kernel_samsung_s5e9925"
+
+        echo "Searching for kernel Makefile on branch $BRANCH"
+
+        POSSIBLE_MAKEFILES=(
+          "kernel_platform/common/Makefile"
+          "kernel/Makefile"
+          "kernel-6.6/Makefile"
+          "kernel-6.1/Makefile"
+          "kernel-5.10/Makefile"
+          "Makefile"
+        )
+
+        MAKEFILE_PATH=""
+        MAKEFILE_CONTENT=""
+
+        for file in "${POSSIBLE_MAKEFILES[@]}"; do
+          RAW_URL="https://raw.githubusercontent.com/$REPO/$file"
 
           echo "Checking: $file"
 
