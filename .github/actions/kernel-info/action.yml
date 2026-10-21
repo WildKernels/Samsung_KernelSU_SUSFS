@@ -24,7 +24,7 @@ runs:
         MAKEFILE_CONTENT=""
 
         for file in "${POSSIBLE_MAKEFILES[@]}"; do
-          RAW_URL="https://raw.githubusercontent.com/$REPO/$file"
+          RAW_URL="https://raw.githubusercontent.com/$REPO/lineage-24.0/$file"
 
           echo "Checking: $file"
 
