@@ -51,8 +51,10 @@ runs:
       GKI_DEFCONFIG="$COMMON/arch/arm64/configs/s5e8535-a16xxx_defconfig"
      elif [[ $BRANCH == SM-A356E* ]]; then
       GKI_DEFCONFIG="$COMMON/arch/arm64/configs/s5e8835-a35xjvxx_defconfig"
-     elif [[ $BRANCH == SM-S711* ]]; then
+     elif [[ $BRANCH == SM-S711B-O* ]]; then
       GKI_DEFCONFIG="$COMMON/arch/arm64/configs/s5e9925-r11sksx_defconfig"
+     elif [[ $BRANCH == SM-S711B-L* ]]; then
+      GKI_DEFCONFIG="$COMMON/arch/arm64/configs/s5e9925_defconfig"
      else
        GKI_DEFCONFIG="$COMMON/arch/arm64/configs/gki_defconfig"
      fi
