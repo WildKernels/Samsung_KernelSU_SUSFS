@@ -89,13 +89,13 @@ runs:
       export PATH="$TOOLCHAIN_DIR/bin:$PATH"
       export CC=clang
       mkdir -p "$OUT_DIR"
-      echo "== Merging $DEFCONFIG + $VARIANT_CONFIG=="
-      ./scripts/kconfig/merge_config.sh \
-      -m -O "$OUT_DIR" \
-      "$DEFCONFIG" \
-      "$VARIANT_CONFIG"
-      echo "== Finalizing merged config (olddefconfig) =="
-      make O="$OUT_DIR" ARCH=arm64 olddefconfig
+      #echo "== Merging $DEFCONFIG + $VARIANT_CONFIG=="
+      #./scripts/kconfig/merge_config.sh \
+      #-m -O "$OUT_DIR" \
+      #"$DEFCONFIG" \
+      #"$VARIANT_CONFIG"
+      #echo "== Finalizing merged config (olddefconfig) =="
+      make O="$OUT_DIR" ARCH=arm64 s5e9925_defconfig r11s.config
       echo "Building Kernel"
       make O="$OUT_DIR" ARCH=arm64 -j"$JOBS" Image
      fi
