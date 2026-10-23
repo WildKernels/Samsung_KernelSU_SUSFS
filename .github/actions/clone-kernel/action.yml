@@ -20,6 +20,6 @@ runs:
       cd "$CONFIG"
       mkdir -p toolchain/clang/host/linux-x86
       cd toolchain/clang/host/linux-x86
-      wget https://github.com/llvm/llvm-project/releases/download/llvmorg-18.1.3/clang+llvm-18.1.3-x86_64-linux-gnu-ubuntu-18.04.tar.xz
-      tar -xf clang+llvm-18.1.3-x86_64-linux-gnu-ubuntu-18.04.tar.xz
-      ./clang+llvm-18.1.3-x86_64-linux-gnu-ubuntu-18.04/bin/clang --version
+      git clone --depth 1 --filter=blob:none --sparse https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 aosp-clang
+      cd aosp-clang
+      git sparse-checkout set clang-r614150
