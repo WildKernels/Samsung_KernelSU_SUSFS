@@ -14,23 +14,9 @@ runs:
      if: ${{ contains(env.BRANCH, 'LOS') }}
      shell: bash
      run: |
-      if [[ $BRANCH == *24.0 ]]; then
-       LOSBRANCH="lineage-24.0"
-       CLANG_VER="clang-r614150"
-      fi
-       
-      if [[ $BRANCH == SM-S711B-LOS* ]]; then
-       repo="https://github.com/LineageOS/android_kernel_samsung_s5e9925.git"
-      fi
-       
-      if [[ -z "$LOSBRANCH" || -z "$repo" ]]; then
-      echo "Error: LOSBRANCH or repo was not set for BRANCH=$BRANCH"
-      exit 1
-      fi
+      #LOSBRANCH, REPO, and CLANG_VER are defined in the kernel-info action!!
       
-      echo "LOSBRANCH=$LOSBRANCH" >> "$GITHUB_ENV"
-      echo "CLANG_VER=$CLANG_VER" >> $GITHUB_ENV
-      git clone --depth 1 -b "$LOSBRANCH" --single-branch "$repo" $CONFIG
+      git clone --depth 1 -b "$LOSBRANCH" --single-branch "$REPO" $CONFIG
 
       #setup LOS toolchain
       cd "$CONFIG"

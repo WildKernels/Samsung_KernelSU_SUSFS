@@ -5,7 +5,7 @@ runs:
   using: composite
   steps:
     - name: Locate and extract kernel version
-      if: env.BRANCH != '*LOS'
+      if: ${{ !contains(env.BRANCH, 'LOS') }}
       shell: bash
       run: |
         REPO="WildKernels/Samsung_Kernels"
@@ -80,19 +80,22 @@ runs:
         echo "KERNEL_VER=$KERNEL_VERSION" >> "$GITHUB_ENV"
 
     - name: Locate and extract kernel version
-      if: env.BRANCH == '*LOS'
+      if: ${{ contains(env.BRANCH, 'LOS') }}
       shell: bash
       run: |
-        REPO="LineageOS/android_kernel_samsung_s5e9925"
-
+        if [[ $BRANCH == *24.0 ]]; then
+        LOSBRANCH="lineage-24.0"
+        CLANG_VER="clang-r614150"
+        fi
+       
+        if [[ $BRANCH == SM-S711B-LOS* ]]; then
+         repo="https://github.com/LineageOS/android_kernel_samsung_s5e9925.git"
+         REPO="LineageOS/android_kernel_samsung_s5e9925"
+        fi
+        
         echo "Searching for kernel Makefile on branch $BRANCH"
 
         POSSIBLE_MAKEFILES=(
-          "kernel_platform/common/Makefile"
-          "kernel/Makefile"
-          "kernel-6.6/Makefile"
-          "kernel-6.1/Makefile"
-          "kernel-5.10/Makefile"
           "Makefile"
         )
 
@@ -100,7 +103,7 @@ runs:
         MAKEFILE_CONTENT=""
 
         for file in "${POSSIBLE_MAKEFILES[@]}"; do
-          RAW_URL="https://raw.githubusercontent.com/$REPO/$file"
+          RAW_URL="https://raw.githubusercontent.com/$REPO/$LOSBRANCH/$file"
 
           echo "Checking: $file"
 
@@ -153,3 +156,6 @@ runs:
 
         echo "ANDROID_VER=$ANDROID_VERSION" >> "$GITHUB_ENV"
         echo "KERNEL_VER=$KERNEL_VERSION" >> "$GITHUB_ENV"
+        echo "LOSBRANCH=$LOSBRANCH" >> "$GITHUB_ENV"
+        echo "CLANG_VER=$CLANG_VER" >> $GITHUB_ENV
+        echo "REPO=$repo" >> $GITHUB_ENV
