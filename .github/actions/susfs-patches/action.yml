@@ -62,7 +62,7 @@ runs:
        fi
 
        #move fslog.h for susfs patch for LOS
-       if [[ $BRANCH == *LOS ]]; then
+       if [[ $BRANCH == *LOS* ]]; then
         sed -i '/#include <linux\/fslog.h>/d; /#include <linux\/security.h>/a #include <linux/fslog.h>' fs/namespace.c
         sed -i '/#include <linux\/cn_proc.h>/d; /#include <linux\/slab.h>/a #include <linux/cn_proc.h>' fs/proc/base.c
        fi
