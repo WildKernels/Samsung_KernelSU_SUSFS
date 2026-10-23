@@ -35,6 +35,7 @@ runs:
      echo "COMMON=$COMMON" >> $GITHUB_ENV
     
   - name: set defconfig variable
+    if: ${{ !contains(env.BRANCH, 'LOS') }}
     shell: bash
     run: |
      if [[ $BRANCH == SM-A546B* ]]; then
@@ -53,9 +54,19 @@ runs:
       GKI_DEFCONFIG="$COMMON/arch/arm64/configs/s5e8835-a35xjvxx_defconfig"
      elif [[ $BRANCH == SM-S711B-O* ]]; then
       GKI_DEFCONFIG="$COMMON/arch/arm64/configs/s5e9925-r11sksx_defconfig"
-     elif [[ $BRANCH == SM-S711B-L* ]]; then
-      GKI_DEFCONFIG="$COMMON/arch/arm64/configs/s5e9925_defconfig"
      else
        GKI_DEFCONFIG="$COMMON/arch/arm64/configs/gki_defconfig"
      fi
      echo "GKI_DEFCONFIG=$GKI_DEFCONFIG" >> $GITHUB_ENV
+
+  - name: set defconfig variable
+    if: ${{ contains(env.BRANCH, 'LOS') }}
+    shell: bash
+    run: |
+      if [[ $BRANCH == SM-S711B-L* ]]; then
+       GKI_DEFCONFIG="$COMMON/arch/arm64/configs/s5e9925_defconfig"
+       VARIANT_CONFIG="$COMMON/arch/arm64/configs/r11s.config"
+      fi
+
+      echo "GKI_DEFCONFIG=$GKI_DEFCONFIG" >> $GITHUB_ENV
+      echo "VARIANT_CONFIG=$VARIANT_CONFIG" >> $GITHUB_ENV
