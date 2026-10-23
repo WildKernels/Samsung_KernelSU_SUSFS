@@ -87,7 +87,7 @@ runs:
       export PATH="$TOOLCHAIN_DIR/bin:$PATH"
       export CC=clang
       mkdir -p "$OUT_DIR"
-      make O="$OUT_DIR" ARCH=arm64 "$GKI_DEFCONFIG" "$VARIANT_CONFIG"
+      make O="$OUT_DIR" ARCH=arm64 s5e9925_defconfig r11s.config
       echo "Building Kernel"
       make O="$OUT_DIR" ARCH=arm64 -j"$JOBS" Image
      fi
