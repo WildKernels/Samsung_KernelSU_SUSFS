@@ -24,7 +24,6 @@ runs:
         curl -LSs "https://raw.githubusercontent.com/pershoot/KernelSU-Next/dev-susfs/kernel/setup.sh" | bash -s dev-susfs
 
     - name: enable in defconfig
-      if: inputs.susfs == 'false'
       shell: bash
       run: |
         "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_KSU
