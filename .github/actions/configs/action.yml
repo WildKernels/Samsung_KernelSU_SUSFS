@@ -56,8 +56,14 @@ runs:
       "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_RKP_CFP_ROPP
       "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_RKP_CFP
       "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_SECURITY_DEFEX
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_SECURITY_DEFEX_USER
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_SECURITY_DEFEX_DTM
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_SECURITY_DEFEX_IMR
       "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_PROCA
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_PROCA_S_OS
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_PROCA_CERTIFICATES_DB
       "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_FIVE
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_FIVE_GKI_10
       "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KDP
       "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KDP_NS
       "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KNOX_NCM
