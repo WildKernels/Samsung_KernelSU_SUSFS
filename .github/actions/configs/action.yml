@@ -32,7 +32,7 @@ runs:
          target_configs=("$COMMON/arch/arm64/configs/s5e8845-bazel_defconfig")
      elif [[ $BRANCH == SM-A566* ]]; then
          target_configs=("$CONFIG/exynos/device/mx/mx8855/arch/arm64/configs/s5e8855-bazel_defconfig"
-         "$CONFIG/exynos/device/mx/mx8855/arch/arm64/configs/base_kernel_user.fragment"
+         "$CONFIG/exynos/soc-series/s-android15/arch/arm64/configs/base_kernel_user.fragment"
          )
      elif [[ $BRANCH == SM-A055* || $BRANCH == SM-A146P* ]]; then
          target_configs=("$CONFIG/kernel/kernel_device_modules-6.6/arch/arm64/configs/mediatek-bazel_defconfig")
