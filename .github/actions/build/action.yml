@@ -41,8 +41,8 @@ runs:
        tools/bazel build --nocheck_bzl_visibility --config=stamp --sandbox_debug --verbose_failures --debug_make_verbosity=I $BAZEL_LTO //projects/s5e8845:s5e8845_user
      elif [[ $BRANCH == SM-A566* ]]; then
        ln -s "$PWD/kernel-6.6" common
-       tools/bazel run --config=stamp --config=mx8855_user //exynos/device/mx/mx8855:mx8855_dist
-       #tools/bazel build --config=stamp --config=mx8855_user //exynos/device/mx/mx8855:mx8855
+       #tools/bazel run --config=stamp --config=mx8855_user //exynos/device/mx/mx8855:mx8855_dist
+       tools/bazel build --config=stamp --config=mx8855_user //exynos/device/mx/mx8855:mx8855
      elif [[ $BRANCH == SM-S938B* ]]; then
       sed -i '/drivers\/net\/usb\/smsc75xx\.ko/d;/drivers\/net\/usb\/smsc95xx\.ko/d' kernel_platform/common/modules.bzl
       chmod +x build_kernel_GKI.sh
