@@ -22,44 +22,49 @@ runs:
     shell: bash
     run: |
      # 1. Determine which defconfig file needs to be patched based on the branch
-     target_config=""
+     target_configs=()
      
      if [[ $BRANCH == SM-S938B* || "$BRANCH" == "SM-S931B-Oneui8" ]]; then
          echo "Nothing to see here, moving on..."
      elif [[ $BRANCH == SM-S926B* ]]; then
-         target_config="$COMMON/arch/arm64/configs/s5e9945-bazel_defconfig"
+         target_configs=("$COMMON/arch/arm64/configs/s5e9945-bazel_defconfig")
      elif [[ $BRANCH == SM-A556* ]]; then
-         target_config="$COMMON/arch/arm64/configs/s5e8845-bazel_defconfig"
+         target_configs=("$COMMON/arch/arm64/configs/s5e8845-bazel_defconfig")
      elif [[ $BRANCH == SM-A566* ]]; then
-         target_config="$CONFIG/exynos/device/mx/mx8855/arch/arm64/configs/s5e8855-bazel_defconfig"
+         target_configs=("$CONFIG/exynos/device/mx/mx8855/arch/arm64/configs/s5e8855-bazel_defconfig"
+         "$CONFIG/exynos/device/mx/mx8855/arch/arm64/configs/base_kernel_user.fragment"
+         )
      elif [[ $BRANCH == SM-A055* || $BRANCH == SM-A146P* ]]; then
-         target_config="$CONFIG/kernel/kernel_device_modules-6.6/arch/arm64/configs/mediatek-bazel_defconfig"
+         target_configs=("$CONFIG/kernel/kernel_device_modules-6.6/arch/arm64/configs/mediatek-bazel_defconfig")
      elif [[ $BRANCH == SM-A075* ]]; then
-         target_config="$COMMON/arch/arm64/configs/a07_00_defconfig"
+         target_configs=("$COMMON/arch/arm64/configs/a07_00_defconfig")
      else
-         target_config="$GKI_DEFCONFIG"
+         target_configs=("$GKI_DEFCONFIG")
      fi
      
      # 2. Apply the nuke modifications exactly once if a target file was assigned
-     if [ -n "$target_config" ]; then
-      echo "Nuking Samsung Knox/Root protection in: $target_config"
-
-     
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_UH
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_UH_RKP
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_UH_LKMAUTH
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_UH_LKM_BLOCK
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_RKP
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_RKP_CFP_JOPP
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_RKP_CFP_ROPP
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_RKP_CFP
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_SECURITY_DEFEX
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_PROCA
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_FIVE
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KDP
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KDP_NS
-     "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KNOX_NCM
-     fi
+     for target_config in "${target_configs[@]}"; do
+      if [ -n "$target_config" ]; then
+       echo "Nuking Samsung Knox/Root protection in: $target_config"
+       
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_UH
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_UH_RKP
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_UH_LKMAUTH
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_UH_LKM_BLOCK
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_RKP
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_RKP_CFP_JOPP
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_RKP_CFP_ROPP
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_RKP_CFP
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_SECURITY_DEFEX
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_PROCA
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_FIVE
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KDP
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KDP_NS
+      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KNOX_NCM
+      else
+       echo "WARNING: Config file not found: $target_config"
+      fi
+     done
 
   - name: remove check_defconfig
     shell: bash
