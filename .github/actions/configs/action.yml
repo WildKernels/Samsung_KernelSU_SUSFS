@@ -30,6 +30,8 @@ runs:
          target_config="$COMMON/arch/arm64/configs/s5e9945-bazel_defconfig"
      elif [[ $BRANCH == SM-A556* ]]; then
          target_config="$COMMON/arch/arm64/configs/s5e8845-bazel_defconfig"
+     elif [[ $BRANCH == SM-A566* ]]; then
+         target_config="$CONFIG/exynos/device/mx/mx8855/arch/arm64/configs/s5e8855-bazel_defconfig"
      elif [[ $BRANCH == SM-A055* || $BRANCH == SM-A146P* ]]; then
          target_config="$CONFIG/kernel/kernel_device_modules-6.6/arch/arm64/configs/mediatek-bazel_defconfig"
      elif [[ $BRANCH == SM-A075* ]]; then
@@ -56,9 +58,7 @@ runs:
      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_FIVE
      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KDP
      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KDP_NS
-     #"$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KNOX
      "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KNOX_NCM
-     #"$COMMON/scripts/config" --file "$target_config" --disable CONFIG_KNOX_KAP
      fi
 
   - name: remove check_defconfig
