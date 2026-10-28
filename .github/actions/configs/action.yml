@@ -44,7 +44,7 @@ runs:
      
      # 2. Apply the nuke modifications exactly once if a target file was assigned
      for target_config in "${target_configs[@]}"; do
-      if [ -n "$target_config" ]; then
+      if [ -f "$target_config" ]; then
        echo "Nuking Samsung Knox/Root protection in: $target_config"
        
       "$COMMON/scripts/config" --file "$target_config" --disable CONFIG_UH
