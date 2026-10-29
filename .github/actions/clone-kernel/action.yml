@@ -10,9 +10,6 @@ runs:
      run: |
       git clone --depth 1 -b $BRANCH --single-branch https://github.com/WildKernels/Samsung_Kernels.git $CONFIG
 
-      cd $CONFIG
-      grep -R -n '_COMMON_KERNEL_MODULE_LIST' .
-
    - name: Clone Kernel Source
      if: ${{ contains(env.BRANCH, 'LOS') }}
      shell: bash
