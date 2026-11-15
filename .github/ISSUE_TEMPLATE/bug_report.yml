@@ -1,0 +1,98 @@
+name: "🐛 Bug Report"
+description: Report a problem with a kernel or one of its features.
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before submitting:
+        - Search existing issues to avoid duplicates.
+        - Make sure you are using the correct kernel for your device.
+        - Provide logs whenever possible.
+
+  - type: input
+    id: device
+    attributes:
+      label: Device Model
+      placeholder: "SM-S928B"
+    validations:
+      required: true
+
+  - type: input
+    id: kernel
+    attributes:
+      label: Kernel Version / Build
+      placeholder: "6.1.x - WildKernels build"
+    validations:
+      required: true
+
+  - type: input
+    id: android
+    attributes:
+      label: Android / One UI Version
+      placeholder: "Android 16 / One UI 8"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue_type
+    attributes:
+      label: Issue Type
+      options:
+        - Bootloop
+        - Random Reboot
+        - Kernel Feature Not Working
+        - Performance Issue
+        - Battery Drain
+        - Installation Issue
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Describe the Issue
+      description: Explain what is happening.
+      placeholder: Describe the problem in detail...
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1. Flash the kernel
+        2. Enable ...
+        3. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behaviour
+      placeholder: What should happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Upload or paste relevant logs. For bootloops, provide a pstore/ramoops/last_kmsg log if available.
+      placeholder: Paste logs or provide a link to them.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmation
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues for duplicates.
+          required: true
+        - label: I am using the correct kernel for my device and firmware.
+          required: true
