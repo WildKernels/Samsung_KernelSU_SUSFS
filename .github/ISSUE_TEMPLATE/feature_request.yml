@@ -1,0 +1,62 @@
+name: "✨ Feature Request"
+description: Suggest a new feature or improvement.
+title: "[FEATURE] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have an idea for improving the kernel? Let us know!
+
+        Please explain what the feature does and why it would be useful.
+
+  - type: input
+    id: feature
+    attributes:
+      label: Feature Name
+      placeholder: "Example: Additional CPU governor"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      options:
+        - Performance
+        - Battery Life
+        - CPU / GPU
+        - Memory Management
+        - Networking
+        - KernelSU / SUSFS
+        - Device Support
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature Description
+      description: Explain the feature you want added.
+      placeholder: Describe your idea...
+    validations:
+      required: true
+
+  - type: textarea
+    id: benefit
+    attributes:
+      label: Benefits
+      description: How would this improve the kernel?
+      placeholder: Explain the expected benefits...
+    validations:
+      required: true
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Suggestions
+      description: Optional patches, commits, or references.
+      placeholder: "https://github.com/..."
+    validations:
+      required: false
