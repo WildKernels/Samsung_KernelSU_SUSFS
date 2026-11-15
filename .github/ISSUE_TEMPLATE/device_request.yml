@@ -1,0 +1,62 @@
+name: "📱 Device Request"
+description: Request kernel support for a new Samsung device.
+title: "[DEVICE REQUEST] "
+labels: ["device-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for requesting support for a new device!
+
+        Please provide as much information as possible. Device support
+        is not guaranteed and depends on source availability.
+
+  - type: input
+    id: device_name
+    attributes:
+      label: Device Name
+      description: "Example: Samsung Galaxy S24 Ultra"
+      placeholder: "Galaxy S24 Ultra"
+    validations:
+      required: true
+
+  - type: input
+    id: model
+    attributes:
+      label: Device Model
+      description: "Exact model number."
+      placeholder: "SM-S928B"
+    validations:
+      required: true
+
+  - type: input
+    id: android
+    attributes:
+      label: Android / One UI Version
+      placeholder: "Android 16 / One UI 8"
+    validations:
+      required: true
+
+  - type: input
+    id: kernel
+    attributes:
+      label: Stock Kernel Version
+      placeholder: "6.1.XX"
+    validations:
+      required: true
+
+  - type: textarea
+    id: source
+    attributes:
+      label: Kernel Source
+      description: Link to the device's kernel source, if available.
+      placeholder: "https://github.com/... or opensource.samsung.com"
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Information
+      description: Any other relevant information.
+      placeholder: "Anything else that might help..."
