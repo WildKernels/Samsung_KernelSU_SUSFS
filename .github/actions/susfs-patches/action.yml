@@ -52,6 +52,14 @@ runs:
       #Prepare open.c for susfs patching
       sed -i '/#ifdef CONFIG_SECURITY_DEFEX/,/^#endif/d' fs/open.c
 
+   - name: prepare namei.c for susfs patch
+     shell: bash
+     run: |
+      cd "$COMMON"
+      #Prepare namei.c for susfs patching
+      # Delete security defex blocks ONLY inside path_openat function
+      sed -i '/^static struct file \*path_openat/,/^}/ { /CONFIG_SECURITY_DEFEX/,/^#endif/d }' fs/namei.c
+
    - name: prepare namespace.c for susfs patching
      shell: bash
      run: |
