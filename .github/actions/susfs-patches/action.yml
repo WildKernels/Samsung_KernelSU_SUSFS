@@ -53,12 +53,20 @@ runs:
       sed -i '/#ifdef CONFIG_SECURITY_DEFEX/,/^#endif/d' fs/open.c
 
    - name: prepare namei.c for susfs patch
+     if: env.BRANCH == 'SM-S928B-Oneui9'
      shell: bash
      run: |
       cd "$COMMON"
       #Prepare namei.c for susfs patching
-      # Delete security defex blocks ONLY inside path_openat function
-      sed -i '/^static struct file \*path_openat/,/^}/ { /CONFIG_SECURITY_DEFEX/,/^#endif/d }' fs/namei.c
+      # Delete security defex blocks
+      sed -i '/#ifdef CONFIG_SECURITY_DEFEX/,/^#endif/d' fs/namei.c
+
+      # 2. Cleanup command: Find the empty while loop body and replace it with a semicolon
+      sed -i '/while (!(error = link_path_walk/,/^[[:space:]]*}[[:space:]]*$/{
+      s/) {$/)/
+      /^[[:space:]]*}[[:space:]]*$/c\
+      \t\t\t;
+      }' fs/namei.c
 
    - name: prepare namespace.c for susfs patching
      shell: bash
