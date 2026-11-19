@@ -146,6 +146,7 @@ runs:
         fi
        
    - name: undo namespace.c fake patch since trace/hooks/blk.h doesn't exist in kernel
+     if: ${{ !contains(env.BRANCH, 'LOS') }}
      shell: bash
      run: |
        cd "$COMMON"
