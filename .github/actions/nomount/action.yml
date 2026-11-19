@@ -14,3 +14,4 @@ runs:
      shell: bash
      run: |
       "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_NOMOUNT
+      "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_KEYS
