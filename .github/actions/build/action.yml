@@ -92,6 +92,7 @@ runs:
       export PATH="$TOOLCHAIN_DIR/bin:$PATH"
       export CC=clang
       mkdir -p "$OUT_DIR"
+      sudo apt-get install -y libelf-dev libssl-dev bc bison flex
       make O="$OUT_DIR" ARCH=arm64 "${CONFIGS[@]}"
       echo "Building Kernel"
       make O="$OUT_DIR" ARCH=arm64 -j"$JOBS" Image
