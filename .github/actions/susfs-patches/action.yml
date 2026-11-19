@@ -91,7 +91,8 @@ runs:
      if: ${{ contains(env.BRANCH, 'LOS') }}
      shell: bash
      run: |
-       #move fslog.h for susfs patch for LOS
+       cd "$COMMON"
+       #move includes for susfs patch
        if [[ $BRANCH == SM-S711B-LOS* ]]; then
         sed -i '/#include <linux\/fslog.h>/d; /#include <linux\/security.h>/a #include <linux/fslog.h>' fs/namespace.c
         sed -i '/#include <linux\/cn_proc.h>/d; /#include <linux\/slab.h>/a #include <linux/cn_proc.h>' fs/proc/base.c
