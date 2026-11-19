@@ -71,7 +71,7 @@ runs:
       elif [[ $BRANCH == SM-S928B-L* ]]; then
        GKI_DEFCONFIG="$COMMON/arch/arm64/configs/gki_defconfig"
        VARIANT_CONFIG="$COMMON/arch/arm64/configs/defconfig"
-       CONFIGS=(gki_defconfig e3q_defconfig pineapple_GKI.config pineapple_sec_defconfig)
+       CONFIGS=(gki_defconfig oem/e3q_defconfig vendor/pineapple_GKI.config oem/pineapple_sec_defconfig)
       elif [[ $BRANCH == SM-A556B-L* ]]; then
        GKI_DEFCONFIG="$COMMON/arch/arm64/configs/a55x_defconfig"
        CONFIGS=(a55x_defconfig)
