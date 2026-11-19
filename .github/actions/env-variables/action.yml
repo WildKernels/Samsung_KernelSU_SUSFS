@@ -66,21 +66,17 @@ runs:
       if [[ $BRANCH == SM-S711B-L* ]]; then
        GKI_DEFCONFIG="$COMMON/arch/arm64/configs/s5e9925_defconfig"
        VARIANT_CONFIG="$COMMON/arch/arm64/configs/r11s.config"
-       LOS_CONFIG="s5e9925_defconfig"
-       LOS_VAR_CONFIG="r11s.config"
+       CONFIGS=(s5e9925_defconfig r11s.config)
+       echo "VARIANT_CONFIG=$VARIANT_CONFIG" >> $GITHUB_ENV
       elif [[ $BRANCH == SM-S928B-L* ]]; then
        GKI_DEFCONFIG="$COMMON/arch/arm64/configs/gki_defconfig"
        VARIANT_CONFIG="$COMMON/arch/arm64/configs/defconfig"
-       LOS_CONFIG="gki_defconfig"
-       LOS_VAR_CONFIG="defconfig"
+       CONFIGS=(gki_defconfig e3q_defconfig pineapple_GKI.config pineapple_sec_defconfig)
       elif [[ $BRANCH == SM-A556B-L* ]]; then
-       GKI_DEFCONFIG="$COMMON/arch/arm64/configs/gki_defconfig"
-       VARIANT_CONFIG="$COMMON/arch/arm64/configs/defconfig"
-       LOS_CONFIG="gki_defconfig"
-       LOS_VAR_CONFIG="defconfig"
+       GKI_DEFCONFIG="$COMMON/arch/arm64/configs/a55x_defconfig"
+       CONFIGS=(a55x_defconfig)
       fi
 
       echo "GKI_DEFCONFIG=$GKI_DEFCONFIG" >> $GITHUB_ENV
-      echo "VARIANT_CONFIG=$VARIANT_CONFIG" >> $GITHUB_ENV
-      echo "LOS_CONFIG=$LOS_CONFIG" >> $GITHUB_ENV
-      echo "LOS_VAR_CONFIG=$LOS_VAR_CONFIG" >> $GITHUB_ENV
+      echo "CONFIG_ARRAY=${CONFIGS[*]}" >> $GITHUB_ENV
+      
