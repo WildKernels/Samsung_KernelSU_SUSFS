@@ -92,7 +92,29 @@ runs:
       export PATH="$TOOLCHAIN_DIR/bin:$PATH"
       export CC=clang
       mkdir -p "$OUT_DIR"
-      make O="$OUT_DIR" ARCH=arm64 "${CONFIGS[@]}"
+      sudo apt-get install -y libelf-dev libssl-dev bc bison flex dwarves
+      if [ "${#CONFIGS[@]}" -eq 1 ]; then
+       echo "Applying single config: ${CONFIGS[0]}"
+       make O="$OUT_DIR" ARCH=arm64 "${CONFIGS[0]}"
+      else
+       echo "Applying base config: ${CONFIGS[0]}"
+       make O="$OUT_DIR" ARCH=arm64 "${CONFIGS[0]}"
+
+       echo "Merging remaining configs: ${CONFIGS[*]:1}"
+       FRAGMENTS=()
+
+       for config in "${CONFIGS[@]:1}"; do
+          FRAGMENTS+=("arch/arm64/configs/$config")
+       done
+
+       "$PWD/scripts/kconfig/merge_config.sh" \
+          -O "$OUT_DIR" \
+          -m \
+          "$OUT_DIR/.config" \
+          "${FRAGMENTS[@]}"
+
+       make O="$OUT_DIR" ARCH=arm64 olddefconfig
+      fi
       echo "Building Kernel"
       make O="$OUT_DIR" ARCH=arm64 -j"$JOBS" Image
      fi
