@@ -85,6 +85,7 @@ runs:
       run: |
         if [[ $BRANCH == *24.0 ]]; then
          LOSBRANCH="lineage-24.0"
+         CLANG_VER="clang-r614150"
         elif [[ $BRANCH == *23.2 ]]; then
          LOSBRANCH="lineage-23.2"
         fi
@@ -92,15 +93,12 @@ runs:
         if [[ $BRANCH == SM-S711B-LOS* ]]; then
          repo="https://github.com/LineageOS/android_kernel_samsung_s5e9925.git"
          REPO="LineageOS/android_kernel_samsung_s5e9925"
-         CLANG_VER="clang-r614150"
-        elif [[ $BRANCH == SM-S928B-LOS* ]]; THEN
+        elif [[ $BRANCH == SM-S928B-LOS* ]]; then
          repo="https://github.com/Exynoobs/android_kernel_samsung_sm8650.git"
          REPO="Exynoobs/android_kernel_samsung_sm8650"
-         CLANG_VER="clang-r487747c"
-        elif [[ $BRANCH == SM-A556B-LOS* ]]; THEN
+        elif [[ $BRANCH == SM-A556X-LOS* ]]; then
          repo="https://github.com/LineageOS/android_kernel_samsung_a55x.git"
          REPO="LineageOS/android_kernel_samsung_a55x"
-         CLANG_VER="clang-r487747c"
         fi
         
         echo "Searching for kernel Makefile on branch $BRANCH"
