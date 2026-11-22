@@ -93,6 +93,22 @@ runs:
       export CC=clang
       mkdir -p "$OUT_DIR"
       sudo apt-get install -y libelf-dev libssl-dev bc bison flex dwarves
+      if [ "${#CONFIGS[@]}" -eq 1 ]; then
+       echo "Applying single config: ${CONFIGS[0]}"
+       make O="$OUT_DIR" ARCH=arm64 "${CONFIGS[0]}"
+      else
+       echo "Applying base config: ${CONFIGS[0]}"
+       make O="$OUT_DIR" ARCH=arm64 "${CONFIGS[0]}"
+
+       echo "Merging remaining configs: ${CONFIGS[*]:1}"
+       "$PWD/scripts/kconfig/merge_config.sh" \
+        -O "$OUT_DIR" \
+        -m \
+        "$OUT_DIR/.config" \
+        "${CONFIGS[@]:1}"
+
+       make O="$OUT_DIR" ARCH=arm64 olddefconfig
+      fi
       make O="$OUT_DIR" ARCH=arm64 "${CONFIGS[@]}"
       echo "Building Kernel"
       make O="$OUT_DIR" ARCH=arm64 -j"$JOBS" Image
