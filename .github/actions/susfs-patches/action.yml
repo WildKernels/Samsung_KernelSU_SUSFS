@@ -53,7 +53,7 @@ runs:
       sed -i '/#ifdef CONFIG_SECURITY_DEFEX/,/^#endif/d' fs/open.c
 
    - name: prepare namei.c for susfs patch
-     if: env.BRANCH == 'SM-S928B-Oneui9'
+     if: env.BRANCH == 'SM-S928B-Oneui9' || env.BRANCH == 'SM-S918B-Oneui9'
      shell: bash
      run: |
       cd "$COMMON"
