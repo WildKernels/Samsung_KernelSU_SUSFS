@@ -69,18 +69,13 @@ runs:
       }' fs/namei.c
 
    - name: prepare namespace.c for susfs patching
+     if: ${{ !contains(env.BRANCH, 'LOS') }}
      shell: bash
      run: |
        cd "$COMMON"
        #fake patch trace/hooks/blk.h for susfs patching for kernel 6.1 and 5.15
        if [[ $KERNEL_VER == 6.1 || $KERNEL_VER == 5.15 ]]; then
          sed -i '/#include "internal.h"/a #include <trace/hooks/blk.h>' fs/namespace.c
-       fi
-
-       #move fslog.h for susfs patch for LOS
-       if [[ $BRANCH == *LOS* ]]; then
-        sed -i '/#include <linux\/fslog.h>/d; /#include <linux\/security.h>/a #include <linux/fslog.h>' fs/namespace.c
-        sed -i '/#include <linux\/cn_proc.h>/d; /#include <linux\/slab.h>/a #include <linux/cn_proc.h>' fs/proc/base.c
        fi
        
        #remove kdp_ns section for susfs patch
@@ -92,6 +87,21 @@ runs:
         }
        }' fs/namespace.c
         
+   - name: prepare namespace.c for susfs patching
+     if: ${{ contains(env.BRANCH, 'LOS') }}
+     shell: bash
+     run: |
+       cd "$COMMON"
+       #move includes for susfs patch
+       if [[ $BRANCH == SM-S711B-LOS* ]]; then
+        sed -i '/#include <linux\/fslog.h>/d; /#include <linux\/security.h>/a #include <linux/fslog.h>' fs/namespace.c
+        sed -i '/#include <linux\/cn_proc.h>/d; /#include <linux\/slab.h>/a #include <linux/cn_proc.h>' fs/proc/base.c
+       elif [[ $BRANCH == SM-A556B-LOS* ]]; then
+        sed -i '/#include <linux\/fslog.h>/d; /#include <linux\/security.h>/a #include <linux/fslog.h>' fs/namespace.c
+        sed -i '/#include <linux\/delay.h>/d; /#include <linux\/security.h>/a #include <linux/delay.h>' fs/namespace.c
+        sed -i '/#include <linux\/task_integrity.h>/d; /#include <linux\/security.h>/a #include <linux/task_integrity.h>' fs/proc/base.c
+       fi
+       
    - name: apply susfs patch and fix if necessary
      shell: bash
      run: |
@@ -136,6 +146,7 @@ runs:
         fi
        
    - name: undo namespace.c fake patch since trace/hooks/blk.h doesn't exist in kernel
+     if: ${{ !contains(env.BRANCH, 'LOS') }}
      shell: bash
      run: |
        cd "$COMMON"
