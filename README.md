@@ -49,7 +49,7 @@ For GKI installation, please follow the official guide:
 
 ## ✨ Features
 
-- 🔐 **KernelSU**: A root solution for Android GKI devices that works in kernel mode and grants root permission to userspace applications directly in kernel space
+- 🔐 **KernelSU / KernelSU-Next / BakaSU**: Three selectable root implementations, chosen with the `root_flavor` input (`KernelSU-Next`, `KernelSU`, `BakaSU`, or `All`). KernelSU is a root solution for Android GKI devices that works in kernel mode and grants root permission to userspace applications directly in kernel space
 - 🛡️ **SUSFS**: An addon root hiding kernel patches and userspace module for KernelSU
 
 ---
@@ -58,6 +58,7 @@ For GKI installation, please follow the official guide:
 |:---------------:|:----------------:|:-----------:|
 | **KernelSU** | tiann | [![GitHub](https://img.shields.io/badge/GitHub-tiann-blue?style=flat-square&logo=github)](https://github.com/tiann/KernelSU) |
 | **KernelSU-Next** | rifsxd | [![GitHub](https://img.shields.io/badge/GitHub-rifsxd-blue?style=flat-square&logo=github)](https://github.com/KernelSU-Next/KernelSU-Next) |
+| **BakaSU** (formerly ReSukiSU) | Baka-SU | [![GitHub](https://img.shields.io/badge/GitHub-Baka--SU-blue?style=flat-square&logo=github)](https://github.com/Baka-SU/BakaSU) |
 | **Magic-KSU** | 5ec1cff | [![GitHub](https://img.shields.io/badge/GitHub-5ec1cff-blue?style=flat-square&logo=github)](https://github.com/5ec1cff/KernelSU) |
 | **SUSFS** | simonpunk | [![GitLab](https://img.shields.io/badge/GitLab-simonpunk-orange?style=flat-square&logo=gitlab)](https://gitlab.com/simonpunk/susfs4ksu.git) |
 | **SUSFS Module** | sidex15 | [![GitHub](https://img.shields.io/badge/GitHub-sidex15-blue?style=flat-square&logo=github)](https://github.com/sidex15) |

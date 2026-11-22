@@ -3,7 +3,12 @@ description: apply susfs patches
 inputs:
  nomount:
   description: 'nomount'
-  required: true
+  required: false
+  default: ''
+ flavor:
+  description: 'root flavor (next / kernelsu / bakasu)'
+  required: false
+  default: ''
 
 runs:
   using: composite
@@ -18,8 +23,12 @@ runs:
       git config --global user.email "41898282+github-actions[bot]@://github.com"
       
       cd susfs4ksu
-      git fetch https://gitlab.com/pershoot/susfs4ksu.git gki-android14-6.1-dev
-      git log ..FETCH_HEAD --oneline -n 2 | awk '{print $1}' | tac | xargs git cherry-pick
+      # pershoot's gki-android14-6.1-dev commits are KernelSU-Next (dev-susfs)
+      # only; other flavors take the simonpunk checkout as-is.
+      if [ "${{ inputs.flavor }}" = "next" ]; then
+        git fetch https://gitlab.com/pershoot/susfs4ksu.git gki-android14-6.1-dev
+        git log ..FETCH_HEAD --oneline -n 2 | awk '{print $1}' | tac | xargs git cherry-pick
+      fi
       
       #cd susfs4ksu
       #if [[ "$ANDROID_VER-$KERNEL_VER" == "android12-5.10" ]]; then
@@ -35,6 +44,21 @@ runs:
 
       SUSFS4KSU="$ROOT/susfs4ksu"
       echo "SUSFS4KSU=$SUSFS4KSU" >> $GITHUB_ENV
+
+   - name: Enable SUSFS in KernelSU
+     if: inputs.flavor == 'kernelsu'
+     shell: bash
+     run: |
+      # tiann KernelSU ships no SUSFS: apply the enable patch to the root
+      # checkout. KernelSU-Next and BakaSU include SUSFS themselves.
+      PATCH="$SUSFS4KSU/kernel_patches/KernelSU/10_enable_susfs_for_ksu.patch"
+      if [ ! -f "$PATCH" ]; then
+        echo "Missing 10_enable_susfs_for_ksu.patch at $PATCH" >&2
+        exit 1
+      fi
+      git -C "$ROOT_DIR" apply --check "$PATCH"
+      git -C "$ROOT_DIR" apply "$PATCH"
+      echo "Applied SUSFS enable patch to KernelSU ($ROOT_COMMIT)"
        
    - name: Copy required files
      shell: bash

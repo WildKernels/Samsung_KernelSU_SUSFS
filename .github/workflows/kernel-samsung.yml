@@ -19,9 +19,13 @@ on:
       nomount:
         required: true
         type: string
-      ksun:
+      root_flavor:
         required: true
         type: string
+      root_commit:
+        required: false
+        type: string
+        default: 
       droidspace:
         required: true
         type: string
@@ -204,7 +208,8 @@ jobs:
       bbg: ${{ inputs.bbg }}
       unicodefix: ${{ inputs.unicodefix }}
       nomount: ${{ inputs.nomount }}
-      ksun: ${{ inputs.ksun }}
+      root_flavor: ${{ inputs.root_flavor }}
+      root_commit: ${{ inputs.root_commit }}
       droidspace: ${{ inputs.droidspace }}
       ntsync: ${{ inputs.ntsync }}
       bbrv3: ${{ inputs.bbrv3 }}

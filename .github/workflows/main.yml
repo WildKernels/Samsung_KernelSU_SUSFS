@@ -27,11 +27,17 @@ on:
           - full
         default: default
 
-      ksun:
-        description: "KSUN"
-        required: false
-        default: true
-        type: boolean
+      root_flavor:
+        description: "Root implementation"
+        required: true
+        type: choice
+        options:
+          - KernelSU-Next
+          - KernelSU
+          - BakaSU
+          - All
+          - none
+        default: KernelSU-Next
 
       susfs:
         description: "SUSFS"
@@ -95,7 +101,58 @@ on:
 
 jobs:
 
+  resolve-roots:
+    runs-on: ubuntu-latest
+    outputs:
+      next_commit: ${{ steps.pins.outputs.next_commit }}
+      ksu_commit: ${{ steps.pins.outputs.ksu_commit }}
+      bakasu_commit: ${{ steps.pins.outputs.bakasu_commit }}
+    steps:
+      - name: Resolve root commits
+        id: pins
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          emit() {
+            if ! [[ "$2" =~ ^[0-9a-f]{40}$ ]]; then
+              echo "Failed to resolve $1 (got: ${2:-empty})" >&2
+              exit 1
+            fi
+            echo "$1=$2" >> "$GITHUB_OUTPUT"
+          }
+
+          # Audited pins. BakaSU is the renamed ReSukiSU project (Baka-SU/BakaSU,
+          # formerly ReSukiSU/ReSukiSU - GitHub redirects, same objects). The
+          # BakaSU pin predates fa12ffd, which dropped fake_state: the gki-*
+          # SUSFS fs patches still reference it, so keep the pin and the SUSFS
+          # branch together.
+          PIN_KERNELSU="e23e035ad168ef13da86970f689dcab062e520de"
+          PIN_BAKASU="833edb0e8e4bc11ac8e976edd7de42da6bdc5bd2"
+
+          # KernelSU-Next follows the branch tip: pershoot's dev-susfs fork when
+          # SUSFS is on (stock KernelSU-Next ships no SUSFS), stock dev otherwise.
+          if [ "${{ inputs.susfs }}" = "true" ]; then
+            NEXT_REPO="https://github.com/pershoot/KernelSU-Next.git"
+            NEXT_BRANCH="dev-susfs"
+          else
+            NEXT_REPO="https://github.com/KernelSU-Next/KernelSU-Next.git"
+            NEXT_BRANCH="dev"
+          fi
+          NEXT_COMMIT="$(git ls-remote "$NEXT_REPO" "refs/heads/$NEXT_BRANCH" | cut -f1)"
+          echo "KernelSU-Next ($NEXT_BRANCH) -> $NEXT_COMMIT"
+
+          emit next_commit "$NEXT_COMMIT"
+          emit ksu_commit "$PIN_KERNELSU"
+          emit bakasu_commit "$PIN_BAKASU"
+
   build-samsung:
+    needs: resolve-roots
+    strategy:
+      fail-fast: false
+      matrix:
+        # One run per selected root implementation; `All` fans out over all three.
+        flavor: ${{ fromJSON(inputs.root_flavor == 'All' && '["next","kernelsu","bakasu"]' || inputs.root_flavor == 'KernelSU-Next' && '["next"]' || inputs.root_flavor == 'KernelSU' && '["kernelsu"]' || inputs.root_flavor == 'BakaSU' && '["bakasu"]' || '["none"]') }}
     uses: ./.github/workflows/kernel-samsung.yml
     secrets: inherit
     with:
@@ -103,7 +160,8 @@ jobs:
       bbg: ${{ inputs.bbg }}
       unicodefix: ${{ inputs.unicodefix }}
       nomount: ${{ inputs.nomount }}
-      ksun: ${{ inputs.ksun }}
+      root_flavor: ${{ matrix.flavor }}
+      root_commit: ${{ matrix.flavor == 'next' && needs.resolve-roots.outputs.next_commit || matrix.flavor == 'kernelsu' && needs.resolve-roots.outputs.ksu_commit || matrix.flavor == 'bakasu' && needs.resolve-roots.outputs.bakasu_commit || '' }}
       droidspace: ${{ inputs.droidspace }}
       ntsync: ${{ inputs.ntsync }}
       bbrv3: ${{ inputs.bbrv3 }}
@@ -114,8 +172,10 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
-    if: inputs.release_type != 'Actions'
+    # Run when every build either succeeded or was not selected for this flavor.
+    if: ${{ !cancelled() && !failure() && inputs.release_type != 'Actions' }}
     needs:
+      - resolve-roots
       - build-samsung
 
     env:
@@ -168,6 +228,8 @@ jobs:
          echo "SUSFS_61=$(git ls-remote https://gitlab.com/simonpunk/susfs4ksu.git refs/heads/gki-android14-6.1 | cut -f1)" >> $GITHUB_ENV
          echo "SUSFS_66=$(git ls-remote https://gitlab.com/simonpunk/susfs4ksu.git refs/heads/gki-android15-6.6 | cut -f1)" >> $GITHUB_ENV
          echo "KSUN_HASH=$(git ls-remote https://github.com/pershoot/KernelSU-Next.git refs/heads/dev | cut -f1)" >> $GITHUB_ENV
+         echo "KSU_HASH=${{ needs.resolve-roots.outputs.ksu_commit }}" >> $GITHUB_ENV
+         echo "BAKASU_HASH=${{ needs.resolve-roots.outputs.bakasu_commit }}" >> $GITHUB_ENV
          echo "BBG_HASH=$(git ls-remote https://github.com/vc-teahouse/Baseband-guard.git refs/heads/main | cut -f1)" >> $GITHUB_ENV
          echo "NM_HASH=$(git ls-remote https://github.com/maxsteeel/nomount.git refs/heads/master | cut -f1)" >> $GITHUB_ENV
 
@@ -183,10 +245,13 @@ jobs:
           Features:
           EOF
 
-          if [ "${{ inputs.ksun }}" = "true" ]; then
+          if [ "${{ inputs.root_flavor }}" != "none" ]; then
           cat <<'EOF' >> release_body.md
+          -> Root implementations: KernelSU-Next, KernelSU, BakaSU (selected: ${{ inputs.root_flavor }})
           -> KernelSU-Next v3.4.2 - https://github.com/KernelSU-Next/KernelSU-Next
-          NOTE: For kernel integration I am using pershoots fork of KernelSU-next. He has claimed that even though everything works fine, the dev has warned that this is not production ready!
+          -> KernelSU - https://github.com/tiann/KernelSU
+          -> BakaSU - https://github.com/Baka-SU/BakaSU
+          NOTE: For kernel integration of KernelSU-Next I am using pershoots fork of KernelSU-next. He has claimed that even though everything works fine, the dev has warned that this is not production ready!
           EOF
           fi
 
@@ -272,10 +337,12 @@ jobs:
 
           Commit Hashes:
           EOF
-          if ${{ inputs.ksun }} == 'true' ]]; then
+          if [ "${{ inputs.root_flavor }}" != "none" ]; then
           cat <<'EOF' >> release_body.md
           
           KSUN: ${{ env.KSUN_HASH }}
+          KSU: ${{ env.KSU_HASH }}
+          BAKASU: ${{ env.BAKASU_HASH }}
           
           EOF
           fi

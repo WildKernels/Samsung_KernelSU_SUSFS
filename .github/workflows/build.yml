@@ -24,9 +24,13 @@ on:
       nomount:
         required: true
         type: string
-      ksun:
+      root_flavor:
         required: true
         type: string
+      root_commit:
+        required: false
+        type: string
+        default: 
       droidspace:
         required: true
         type: string
@@ -123,15 +127,30 @@ jobs:
             rm "$file"
           done
 
-      - name: Add KernelSU-Next
-        if: inputs.ksun == 'true'
-        uses: ./.github/actions/ksun
+      - name: Setup selected root implementation
+        if: inputs.root_flavor != 'none'
+        uses: ./.github/actions/root-setup
         with:
-          susfs: ${{ inputs.susfs }}
+          flavor: ${{ inputs.root_flavor }}
+          commit: ${{ inputs.root_commit }}
         
       - name: Add SUSFS
         if: inputs.susfs == 'true'
         uses: ./.github/actions/susfs-patches
+        with:
+          flavor: ${{ inputs.root_flavor }}
+
+      - name: Disable Samsung security modules for SUSFS
+        if: inputs.susfs == 'true' && inputs.root_flavor != 'none'
+        run: |
+          # Carried over from the old ksun action: SUSFS does not co-exist with
+          # Samsung's KDP / RKP / DEFEX hooks on these trees.
+          "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" \
+            --disable CONFIG_KSU_SAMSUNG_KDP \
+            --disable CONFIG_KSU_SAMSUNG_RKP \
+            --disable CONFIG_KSU_SAMSUNG_DEFEX \
+            --disable CONFIG_KSU_SAMSUNG_NO_PATCH_TEXT
+          echo "Disabled Samsung KDP/RKP/DEFEX for SUSFS"
 
       - name: add nomount
         if: inputs.nomount == 'true'
@@ -174,7 +193,7 @@ jobs:
 #        uses: ./.github/actions/6.6-fix
 
       - name: Set Kernel Configuration Variables
-        if: inputs.ksun == 'true'
+        if: inputs.root_flavor != 'none'
         uses: ./.github/actions/configs
          
       - name: Change Kernel Name and clean dirty
@@ -186,7 +205,7 @@ jobs:
       - name: Set file name
         uses: ./.github/actions/file-name
         with:
-         ksun: ${{ inputs.ksun }}
+         root_flavor: ${{ inputs.root_flavor }}
          susfs: ${{ inputs.susfs }}
          nomount: ${{ inputs.nomount }}
          bbg: ${{ inputs.bbg }}
@@ -263,15 +282,11 @@ jobs:
           echo "- **BBG**: Installed" >> build_summary.md
           echo "" >> build_summary.md
 
-          # Get KernelSU-Next commit
-          if [ -d "$CONFIG/KernelSU-Next" ]; then
-            cd "$CONFIG/KernelSU-Next"
-            KSUN_COMMIT=$(git rev-parse HEAD)
-            KSUN_URL="https://github.com/WildKernels/KernelSU-Next/commit/$KSUN_COMMIT"
-            echo "- **KernelSU-Next**: [$KSUN_COMMIT]($KSUN_URL)" >> "$GITHUB_WORKSPACE/build_summary.md"
-            cd "$GITHUB_WORKSPACE"
+          # Root implementation, exported by the root-setup action
+          if [ -n "${ROOT_MANAGER:-}" ] && [ -n "${ROOT_COMMIT:-}" ]; then
+            echo "- **${ROOT_MANAGER}**: \`${ROOT_COMMIT}\` (${ROOT_VERSION:-unknown})" >> "$GITHUB_WORKSPACE/build_summary.md"
           else
-            echo "- **KernelSU-Next**: not present" >> build_summary.md
+            echo "- **Root implementation**: not present" >> build_summary.md
           fi
           
           # Get Baseband-guard commit

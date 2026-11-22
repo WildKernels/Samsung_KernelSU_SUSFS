@@ -1,8 +1,8 @@
 name: set file name for ak3zip
 description: set file name for ak3 zip
 inputs:
- ksun:
-  description: 'ksun'
+ root_flavor:
+  description: 'next / kernelsu / bakasu'
   required: true
  susfs:
   description: 'susfs'
@@ -41,8 +41,15 @@ runs:
      ARTIFACT_BASE="$BRANCH"
           
      # This gives dynamic file name depending on which features are enabled
+     VARIANT_LABEL=""
+     case "${{ inputs.root_flavor }}" in
+       next) VARIANT_LABEL="KSUN" ;;
+       kernelsu) VARIANT_LABEL="KSU" ;;
+       bakasu) VARIANT_LABEL="BAKASU" ;;
+     esac
+
      FILE_NAME="${ARTIFACT_BASE}"
-     [[ "${{ inputs.ksun }}" == "true" ]] && FILE_NAME="${FILE_NAME}-KSUN${KSU_VERSION}"
+     [[ -n "$VARIANT_LABEL" ]] && FILE_NAME="${FILE_NAME}-${VARIANT_LABEL}${KSU_VERSION}"
      [[ "${{ inputs.susfs }}" == "true" ]] && FILE_NAME="${FILE_NAME}-SUSFS"
      [[ "${{ inputs.nomount }}" == "true" ]] && FILE_NAME="${FILE_NAME}-NM"
      [[ "${{ inputs.bbg }}" == "true" ]] && FILE_NAME="${FILE_NAME}-BBG"

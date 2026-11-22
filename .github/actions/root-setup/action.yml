@@ -1,0 +1,201 @@
+name: Setup pinned root implementation
+description: 'Clone exactly one supported root implementation and wire it into the kernel tree'
+inputs:
+  flavor:
+    description: 'kernelsu, next, or bakasu'
+    required: true
+  commit:
+    description: 'Full immutable commit SHA (empty = tip of the flavor branch)'
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Clone and integrate selected root
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        flavor="${{ inputs.flavor }}"
+        expected_commit="${{ inputs.commit }}"
+        case "$flavor" in
+          kernelsu)
+            repo="https://github.com/tiann/KernelSU.git"
+            directory="KernelSU"
+            manager="KernelSU Manager"
+            repobranch="main"
+            ;;
+          next)
+            repo="https://github.com/KernelSU-Next/KernelSU-Next.git"
+            directory="KernelSU-Next"
+            manager="KernelSU Next Manager"
+            repobranch="dev"
+            ;;
+          bakasu)
+            repo="https://github.com/Baka-SU/BakaSU.git"
+            directory="BakaSU"
+            manager="BakaSU Manager"
+            repobranch="main"
+            ;;
+          *)
+            echo "Unsupported root flavor: $flavor" >&2
+            exit 2
+            ;;
+        esac
+
+        # No pin supplied: build the tip of the flavor branch, then work against
+        # that exact SHA for the rest of the run.
+        if [ -z "$expected_commit" ]; then
+          expected_commit="$(git ls-remote "$repo" "refs/heads/$repobranch" | cut -f1)"
+          if [ -z "$expected_commit" ]; then
+            echo "Cannot resolve tip of $repo $repobranch" >&2
+            exit 1
+          fi
+          echo "No pin for $flavor; resolved $repobranch tip $expected_commit"
+        fi
+
+        if ! [[ "$expected_commit" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "Root commit must be a full 40-character SHA." >&2
+          exit 2
+        fi
+
+        if [ -n "${COMMON:-}" ] && [ -d "$COMMON" ]; then
+          KROOT="$COMMON"
+          CLONE_BASE="$CONFIG"
+        elif [ -n "${CONFIG:-}" ] && [ -d "$CONFIG" ]; then
+          if [ -d "$CONFIG/kernel_platform/common" ]; then KROOT="$CONFIG/kernel_platform/common"
+          elif [ -d "$CONFIG/common" ]; then KROOT="$CONFIG/common"
+          elif [ -d "$CONFIG/kernel-6.6" ]; then KROOT="$CONFIG/kernel-6.6"
+          elif [ -d "$CONFIG/kernel-6.1" ]; then KROOT="$CONFIG/kernel-6.1"
+          elif [ -d "$CONFIG/kernel-5.10" ]; then KROOT="$CONFIG/kernel-5.10"
+          elif [ -d "$CONFIG/kernel" ]; then KROOT="$CONFIG/kernel"
+          else KROOT="$CONFIG"
+          fi
+          CLONE_BASE="$CONFIG"
+        else
+          echo "Cannot resolve kernel root (COMMON/CONFIG not set)." >&2
+          exit 1
+        fi
+
+        echo "KROOT=$KROOT CLONE_BASE=$CLONE_BASE flavor=$flavor"
+
+        for candidate in KernelSU KernelSU-Next BakaSU; do
+          if [ "$candidate" != "$directory" ] && [ -e "$CLONE_BASE/$candidate" ]; then
+            echo "Refusing mixed root implementations: found $candidate." >&2
+            exit 1
+          fi
+        done
+
+        drivers_dir="$KROOT/drivers"
+        if [ ! -d "$drivers_dir" ]; then
+          echo "Kernel drivers directory not found at $drivers_dir" >&2
+          exit 1
+        fi
+
+        if [ -e "$drivers_dir/kernelsu" ] || [ -L "$drivers_dir/kernelsu" ]; then
+          echo "Refusing to replace an existing kernelsu integration." >&2
+          exit 1
+        fi
+        if [ -e "$CLONE_BASE/$directory" ]; then
+          echo "Refusing to reuse an existing root checkout: $directory." >&2
+          exit 1
+        fi
+
+        git clone --no-checkout "$repo" "$CLONE_BASE/$directory"
+        git -C "$CLONE_BASE/$directory" fetch --depth=1 origin "$expected_commit"
+        git -C "$CLONE_BASE/$directory" checkout --detach "$expected_commit"
+        actual_commit="$(git -C "$CLONE_BASE/$directory" rev-parse HEAD)"
+        if [ "$actual_commit" != "$expected_commit" ]; then
+          echo "Root commit mismatch: expected $expected_commit, got $actual_commit." >&2
+          exit 1
+        fi
+        if [ ! -f "$CLONE_BASE/$directory/kernel/Kconfig" ] || [ ! -f "$CLONE_BASE/$directory/kernel/Makefile" ]; then
+          echo "Selected root checkout does not contain a kernel integration." >&2
+          exit 1
+        fi
+        # Read the version before the flavor guards below touch the tree, so
+        # the recorded version is not reported as -dirty.
+        root_version="$(git -C "$CLONE_BASE/$directory" describe --tags --always --dirty)"
+        # BakaSU + Bazel sandbox fix: bypass the .git submodule check (sandbox
+        # has no .git, and the checkout is detached).
+        if [ "$flavor" = "bakasu" ]; then
+          kbuild="$CLONE_BASE/$directory/kernel/Kbuild"
+          if grep -q "LOCAL_GIT_EXISTS" "$kbuild"; then
+            sed -i 's/^LOCAL_GIT_EXISTS.*/LOCAL_GIT_EXISTS := 1/' "$kbuild"
+            echo "Patched BakaSU Kbuild for Bazel sandbox (LOCAL_GIT_EXISTS=1)"
+          fi
+          # Older pins still carry REPO_NAME := ReSukiSU (the project's former
+          # name); it only feeds user-visible version strings, so relabel it.
+          if grep -q '^REPO_NAME := ReSukiSU' "$kbuild"; then
+            sed -i 's/^REPO_NAME := ReSukiSU/REPO_NAME := BakaSU/' "$kbuild"
+            echo "Relabelled REPO_NAME in BakaSU Kbuild"
+          fi
+          # BakaSU's susfs_compat.mk can end in an unconditional
+          # $(error "Please wait susfs update.") that fires on every
+          # CONFIG_KSU_SUSFS=y build. The compat probes above it are what
+          # matter; strip the hard stop when a pin carries it.
+          compat="$CLONE_BASE/$directory/kernel/tools/susfs_compat.mk"
+          if [ -f "$compat" ] && grep -q 'Please wait susfs update' "$compat"; then
+            sed -i '/susfs has NOT update with latest KernelSU source/,$d' "$compat"
+            echo "Stripped susfs_compat hard stop from $compat"
+          fi
+        fi
+        relative_kernel="$(realpath --relative-to="$drivers_dir" "$CLONE_BASE/$directory/kernel" 2>/dev/null || echo "$CLONE_BASE/$directory/kernel")"
+        ln -s "$relative_kernel" "$drivers_dir/kernelsu"
+        grep -q 'obj-$(CONFIG_KSU) += kernelsu/' "$drivers_dir/Makefile" || printf '\nobj-$(CONFIG_KSU) += kernelsu/\n' >> "$drivers_dir/Makefile"
+        grep -q 'source "drivers/kernelsu/Kconfig"' "$drivers_dir/Kconfig" || sed -i '/endmenu/i source "drivers/kernelsu/Kconfig"' "$drivers_dir/Kconfig"
+        ln -sf "$CLONE_BASE/$directory" "$COMMON/KernelSU-Next" 2>/dev/null || true
+        echo "ROOT_IMPLEMENTATION=$flavor" >> "$GITHUB_ENV"
+        echo "ROOT_MANAGER=$manager" >> "$GITHUB_ENV"
+        echo "ROOT_VERSION=$root_version" >> "$GITHUB_ENV"
+        echo "ROOT_COMMIT=$actual_commit" >> "$GITHUB_ENV"
+        echo "ROOT_DIR=$CLONE_BASE/$directory" >> "$GITHUB_ENV"
+
+        cd "$CLONE_BASE/$directory"
+
+        # Explicitly fetch the branch tracking ref and all tags into the clone
+        git fetch origin "$repobranch":refs/remotes/origin/"$repobranch" --tags --unshallow 2>/dev/null || \
+        git fetch origin "$repobranch":refs/remotes/origin/"$repobranch" --tags 2>/dev/null || true
+
+        # Extract and export KSU version info for the PINNED commit, not the
+        # branch tip: the pin is what we build, and the tip may have moved on.
+        KSU_GIT_VERSION=$(git rev-list --count "$expected_commit" 2>/dev/null || echo "0")
+        KSU_GIT_TAG=$(git describe --tags --abbrev=0 "$expected_commit" 2>/dev/null || echo "v0.0.1")
+        KSU_SHORT=$(git rev-parse --short=8 "$expected_commit")
+        KSU_VERSION=$((30000 + KSU_GIT_VERSION))
+
+        cd kernel
+
+        # Dynamically target the right version and tag variable patterns
+        if [ "$flavor" = "bakasu" ]; then
+          # Add the 700 offset specifically required by BakaSU's version logic
+          KSU_VERSION=$((KSU_VERSION + 700))
+
+          # BakaSU targets KSU_VERSION and KSU_TAG_NAME explicitly
+          sed -i "s|^KSU_VERSION :=.*|KSU_VERSION := ${KSU_VERSION}|" Kbuild
+          sed -i "s|^KSU_TAG_NAME.*:=.*|KSU_TAG_NAME := ${KSU_GIT_TAG}|" Kbuild
+          # Bake the short SHA too (both the probe and the -dirty append
+          # match, so both become the literal and the suffix is gone), plus
+          # the branch the pin was taken from.
+          sed -i "s|^KSU_COMMIT_SHA  :=.*|KSU_COMMIT_SHA  := ${KSU_SHORT}|" Kbuild
+          sed -i "s|^KSU_BRANCH_NAME :=.*|KSU_BRANCH_NAME := ${repobranch}|" Kbuild
+        elif [ "$flavor" = "next" ]; then
+          # KernelSU-Next uses the fallback pattern
+          sed -i "s/^KSU_VERSION_FALLBACK := 1$/KSU_VERSION_FALLBACK := ${KSU_VERSION}/" Kbuild
+          sed -i "s|^KSU_VERSION_TAG_FALLBACK := v0.0.1$|KSU_VERSION_TAG_FALLBACK := ${KSU_GIT_TAG}|" Kbuild
+        else
+          # tiann KernelSU: replace the git-count query with the resolved
+          # count, mark it valid, and hardcode the evaluated version.
+          sed -i "s|^KSU_GIT_VERSION :=.*|KSU_GIT_VERSION := ${KSU_GIT_VERSION}|" Kbuild
+          sed -i "s|^KSU_GIT_VERSION_VALID :=.*|KSU_GIT_VERSION_VALID := 1|" Kbuild
+          sed -i "s|^\$(eval KSU_VERSION=\$(shell expr 30000 + \$(KSU_GIT_VERSION)))|\$(eval KSU_VERSION=${KSU_VERSION})|" Kbuild
+        fi
+
+        echo "KSU_GIT_TAG=$KSU_GIT_TAG" >> "$GITHUB_ENV"
+        echo "KSU_VERSION=$KSU_VERSION" >> "$GITHUB_ENV"
+
+    - name: Enable root configuration
+      shell: bash
+      run: |
+        "$COMMON/scripts/config" --file "$GKI_DEFCONFIG" --enable CONFIG_KSU
