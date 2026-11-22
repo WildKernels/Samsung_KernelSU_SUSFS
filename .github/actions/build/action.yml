@@ -101,15 +101,20 @@ runs:
        make O="$OUT_DIR" ARCH=arm64 "${CONFIGS[0]}"
 
        echo "Merging remaining configs: ${CONFIGS[*]:1}"
+       FRAGMENTS=()
+
+       for config in "${CONFIGS[@]:1}"; do
+          FRAGMENTS+=("arch/arm64/configs/$config")
+       done
+
        "$PWD/scripts/kconfig/merge_config.sh" \
-        -O "$OUT_DIR" \
-        -m \
-        "$OUT_DIR/.config" \
-        "${CONFIGS[@]:1}"
+          -O "$OUT_DIR" \
+          -m \
+          "$OUT_DIR/.config" \
+          "${FRAGMENTS[@]}"
 
        make O="$OUT_DIR" ARCH=arm64 olddefconfig
       fi
-      make O="$OUT_DIR" ARCH=arm64 "${CONFIGS[@]}"
       echo "Building Kernel"
       make O="$OUT_DIR" ARCH=arm64 -j"$JOBS" Image
      fi
