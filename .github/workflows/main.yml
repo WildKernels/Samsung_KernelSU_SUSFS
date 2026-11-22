@@ -75,12 +75,6 @@ on:
         type: boolean
         default: true
 
-      cache:
-        description: "CCache"
-        required: false
-        default: true
-        type: boolean
-
       ipv6_nat:
        description: "IPv6_NAT & IP-SET"
        required: false
@@ -113,7 +107,6 @@ jobs:
       droidspace: ${{ inputs.droidspace }}
       ntsync: ${{ inputs.ntsync }}
       bbrv3: ${{ inputs.bbrv3 }}
-      cache: ${{ inputs.cache }}
       ipv6_nat: ${{ inputs.ipv6_nat }}
       optimization: ${{ inputs.optimization }}
       ttl: ${{ inputs.ttl }}
