@@ -96,7 +96,7 @@ runs:
        if [[ $BRANCH == SM-S711B-LOS* ]]; then
         sed -i '/#include <linux\/fslog.h>/d; /#include <linux\/security.h>/a #include <linux/fslog.h>' fs/namespace.c
         sed -i '/#include <linux\/cn_proc.h>/d; /#include <linux\/slab.h>/a #include <linux/cn_proc.h>' fs/proc/base.c
-       elif [[ $BRANCH == SM-A556B-LOS* ]]; then
+       elif [[ $BRANCH == SM-A556X-LOS* ]]; then
         sed -i '/#include <linux\/fslog.h>/d; /#include <linux\/security.h>/a #include <linux/fslog.h>' fs/namespace.c
         sed -i '/#include <linux\/delay.h>/d; /#include <linux\/security.h>/a #include <linux/delay.h>' fs/namespace.c
         sed -i '/#include <linux\/task_integrity.h>/d; /#include <linux\/security.h>/a #include <linux/task_integrity.h>' fs/proc/base.c
