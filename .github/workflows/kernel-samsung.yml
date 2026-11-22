@@ -31,9 +31,6 @@ on:
       bbrv3:
         required: true
         type: string
-      cache:
-        required: true
-        type: string
       ipv6_nat:
         required: true
         type: string
@@ -211,7 +208,6 @@ jobs:
       droidspace: ${{ inputs.droidspace }}
       ntsync: ${{ inputs.ntsync }}
       bbrv3: ${{ inputs.bbrv3 }}
-      cache: ${{ inputs.cache }}
       ipv6_nat: ${{ inputs.ipv6_nat }}
       optimization: ${{ inputs.optimization }}
       ttl: ${{ inputs.ttl }}
