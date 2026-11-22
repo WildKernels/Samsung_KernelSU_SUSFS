@@ -36,9 +36,6 @@ on:
       bbrv3:
         required: true
         type: string
-      cache:
-        required: true
-        type: string
       ipv6_nat:
         required: true
         type: string
@@ -98,82 +95,6 @@ jobs:
         with:
           swap-size-gb: 25          # 10-24 GB is common for heavy LTO
         # swap-space-path: /mnt/swapfile   # optional
-
-      - name: Parse branch for cache keys
-        if: inputs.cache == 'true' && inputs.build_type == 'make'
-        uses: ./.github/actions/parse-branch
-
-#      - name: set up bazel cache dir
-#        if: inputs.build_type == 'Bazel' && inputs.cache == 'true'
-#        run: |
-#          BCACHE_DIR="${{ github.workspace }}/.cache/bazel-disk-kernel"
-#          mkdir -p "$BCACHE_DIR"
-#          echo "BCACHE_DIR=$BCACHE_DIR" >> $GITHUB_ENV
-
- #     - name: set up bazel cache
- #       if: inputs.build_type == 'Bazel' && inputs.cache == 'true'
- #       uses: actions/cache@v6
- #       with:
- #        path: ${{ env.BCACHE_DIR }}
- #        key: bcache-${{ runner.os }}-${{ inputs.build_type }}-${{ env.FULL_BRANCH }}
- #        restore-keys: |
- #           bcache-${{ runner.os }}-${{ inputs.build_type }}-${{ env.FULL_BRANCH }}
-
-      - name: Install ccache
-        if: inputs.cache == 'true' && inputs.build_type == 'make'
-        run: sudo apt-get update && sudo apt-get install -y ccache
-        
-      - name: Export ccache + determinism
-        if: inputs.cache == 'true' && inputs.build_type == 'make'
-        run: |
-          CACHE_DIR="${{ github.workspace }}/.ccache"
-          mkdir -p "$CACHE_DIR"
-          CCACHE_LOG="${{ github.workspace }}/ccache.log"
-          
-          SETTINGS=(
-          "CCACHE_DIR=$CACHE_DIR"
-          "CCACHE_MAXSIZE=12G"
-          "CCACHE_COMPILERCHECK=content"
-          "CCACHE_BASEDIR=${GITHUB_WORKSPACE}"
-          "CCACHE_NOHASHDIR=true"
-          "CCACHE_IGNOREOPTIONS=-sysroot* -fdebug-prefix-map=* -fmacro-prefix-map=*"
-          "CCACHE_COMPRESS=true"
-          "CCACHE_COMPRESSLEVEL=8"
-          "CCACHE_DIRECT=true"
-          "CCACHE_FILE_CLONE=true"
-          "CCACHE_INODE_CACHE=true"
-          "CCACHE_IS_KERNEL_COMPILING=true"
-          "CCACHE_UMASK=002"
-          "KBUILD_BUILD_TIMESTAMP=2026-01-01"
-          "CCACHE_SLOPPINESS=file_macro,time_macros,include_file_mtime,include_file_ctime,pch_defines,system_headers,locale,file_stat_matches"
-          )
-
-          for setting in "${SETTINGS[@]}"; do
-           export "$setting"
-           echo "$setting" >> $GITHUB_ENV
-          done
-
-          if ccache --help 2>&1 | grep -q 'depend_mode'; then
-              export CCACHE_DEPEND=true
-              echo "CCACHE_DEPEND=true" >> "$GITHUB_ENV"
-          fi
-
-      - name: restore ccache
-        if: inputs.cache == 'true' && inputs.build_type == 'make'
-        uses: actions/cache@v6
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ runner.os }}-${{ inputs.build_type }}-${{ env.BASE_BRANCH }}
-          restore-keys: |
-            ccache-${{ runner.os }}-${{ inputs.build_type }}-${{ env.BASE_BRANCH }}
-            ccache-${{ runner.os }}-${{ inputs.build_type }}-
-            
-      - name: Ensure ccache is used
-        if: inputs.cache == 'true' && inputs.build_type == 'make'
-        run: |
-          echo "/usr/lib/ccache" >> $GITHUB_PATH
-          echo "CC='ccache clang'" >> $GITHUB_ENV
-          echo "CXX='ccache clang++'" >> $GITHUB_ENV
         
       - name: Set CONFIG Environment Variable
         run: |
@@ -275,15 +196,6 @@ jobs:
          ipv6_nat: ${{ inputs.ipv6_nat }}
          ttl: ${{ inputs.ttl }}
          unicodefix: ${{ inputs.unicodefix }}
-         
-
-#      - name: ensure bazel cache is set to be used
-#        if: inputs.build_type == 'Bazel' && inputs.cache == 'true'
-#        uses: ./.github/actions/use-bazcache
-
-      - name: change variables to ccache
-        if: inputs.cache == 'true' && inputs.build_type == 'make'
-        uses: ./.github/actions/use-ccache
 
       - name: configure LTO
         uses: ./.github/actions/lto
@@ -292,18 +204,6 @@ jobs:
         uses: ./.github/actions/build
         with:
          build_type: ${{ inputs.build_type }}
-
-      - name: clean up ccache
-        if: inputs.cache == 'true' && inputs.build_type == 'make'
-        run: ccache -c
-        
-      - name: ccache stats
-        if: inputs.cache == 'true' && inputs.build_type == 'make'
-        run: ccache -s -v || ccache -s
-
-#      - name: bazel cache stats
-#        if: inputs.cache == 'true' && inputs.build_type == 'Bazel'
-#        run: bazel analyze-profile profile.json
           
       - name: Prepare AnyKernel3
         uses: ./.github/actions/ak3zip-prep
