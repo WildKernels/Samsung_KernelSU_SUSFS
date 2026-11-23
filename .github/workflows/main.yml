@@ -104,7 +104,6 @@ jobs:
   resolve-roots:
     runs-on: ubuntu-latest
     outputs:
-      next_commit: ${{ steps.pins.outputs.next_commit }}
       ksu_commit: ${{ steps.pins.outputs.ksu_commit }}
       bakasu_commit: ${{ steps.pins.outputs.bakasu_commit }}
     steps:
@@ -130,19 +129,10 @@ jobs:
           PIN_KERNELSU="e23e035ad168ef13da86970f689dcab062e520de"
           PIN_BAKASU="833edb0e8e4bc11ac8e976edd7de42da6bdc5bd2"
 
-          # KernelSU-Next follows the branch tip: pershoot's dev-susfs fork when
-          # SUSFS is on (stock KernelSU-Next ships no SUSFS), stock dev otherwise.
-          if [ "${{ inputs.susfs }}" = "true" ]; then
-            NEXT_REPO="https://github.com/pershoot/KernelSU-Next.git"
-            NEXT_BRANCH="dev-susfs"
-          else
-            NEXT_REPO="https://github.com/KernelSU-Next/KernelSU-Next.git"
-            NEXT_BRANCH="dev"
-          fi
-          NEXT_COMMIT="$(git ls-remote "$NEXT_REPO" "refs/heads/$NEXT_BRANCH" | cut -f1)"
-          echo "KernelSU-Next ($NEXT_BRANCH) -> $NEXT_COMMIT"
-
-          emit next_commit "$NEXT_COMMIT"
+          # KernelSU-Next is deliberately NOT pinned here: it is the only flavor
+          # that follows a moving branch tip, and the root-setup action owns that
+          # repo/branch choice (pershoot/KernelSU-Next dev-susfs when SUSFS is on,
+          # dev otherwise). Pinning it in two places is how the two drifted apart.
           emit ksu_commit "$PIN_KERNELSU"
           emit bakasu_commit "$PIN_BAKASU"
 
@@ -161,7 +151,8 @@ jobs:
       unicodefix: ${{ inputs.unicodefix }}
       nomount: ${{ inputs.nomount }}
       root_flavor: ${{ matrix.flavor }}
-      root_commit: ${{ matrix.flavor == 'next' && needs.resolve-roots.outputs.next_commit || matrix.flavor == 'kernelsu' && needs.resolve-roots.outputs.ksu_commit || matrix.flavor == 'bakasu' && needs.resolve-roots.outputs.bakasu_commit || '' }}
+      # next passes no commit: root-setup resolves its own tip for the branch it picked
+      root_commit: ${{ matrix.flavor == 'kernelsu' && needs.resolve-roots.outputs.ksu_commit || matrix.flavor == 'bakasu' && needs.resolve-roots.outputs.bakasu_commit || '' }}
       droidspace: ${{ inputs.droidspace }}
       ntsync: ${{ inputs.ntsync }}
       bbrv3: ${{ inputs.bbrv3 }}
@@ -227,7 +218,9 @@ jobs:
          echo "SUSFS_515=$(git ls-remote https://gitlab.com/simonpunk/susfs4ksu.git refs/heads/gki-android13-5.15 | cut -f1)" >> $GITHUB_ENV
          echo "SUSFS_61=$(git ls-remote https://gitlab.com/simonpunk/susfs4ksu.git refs/heads/gki-android14-6.1 | cut -f1)" >> $GITHUB_ENV
          echo "SUSFS_66=$(git ls-remote https://gitlab.com/simonpunk/susfs4ksu.git refs/heads/gki-android15-6.6 | cut -f1)" >> $GITHUB_ENV
-         echo "KSUN_HASH=$(git ls-remote https://github.com/pershoot/KernelSU-Next.git refs/heads/dev | cut -f1)" >> $GITHUB_ENV
+         # Match the branch root-setup builds: dev-susfs when SUSFS is on, dev otherwise.
+         if [ "${{ inputs.susfs }}" = "true" ]; then KSUN_BRANCH="dev-susfs"; else KSUN_BRANCH="dev"; fi
+         echo "KSUN_HASH=$(git ls-remote https://github.com/pershoot/KernelSU-Next.git refs/heads/$KSUN_BRANCH | cut -f1)" >> $GITHUB_ENV
          echo "KSU_HASH=${{ needs.resolve-roots.outputs.ksu_commit }}" >> $GITHUB_ENV
          echo "BAKASU_HASH=${{ needs.resolve-roots.outputs.bakasu_commit }}" >> $GITHUB_ENV
          echo "BBG_HASH=$(git ls-remote https://github.com/vc-teahouse/Baseband-guard.git refs/heads/main | cut -f1)" >> $GITHUB_ENV
