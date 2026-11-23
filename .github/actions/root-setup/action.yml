@@ -4,6 +4,9 @@ inputs:
   flavor:
     description: 'kernelsu, next, or bakasu'
     required: true
+  susfs:
+    description: 'is susfs enabled (for pershoot ksun fork)'
+    required: true
   commit:
     description: 'Full immutable commit SHA (empty = tip of the flavor branch)'
     required: false
@@ -27,10 +30,14 @@ runs:
             repobranch="main"
             ;;
           next)
-            repo="https://github.com/KernelSU-Next/KernelSU-Next.git"
+            repo="https://github.com/pershoot/KernelSU-Next.git"
             directory="KernelSU-Next"
             manager="KernelSU Next Manager"
-            repobranch="dev"
+            if [[ ${{ inputs.susfs }} == 'true' ]]; then
+             repobranch="dev-susfs"
+            else
+             repobranch="dev"
+            fi
             ;;
           bakasu)
             repo="https://github.com/Baka-SU/BakaSU.git"
