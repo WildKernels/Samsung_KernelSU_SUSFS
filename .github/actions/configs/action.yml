@@ -21,28 +21,33 @@ runs:
   - name: nuke securities for root access
     shell: bash
     run: |
-     # 1. Determine which defconfig file needs to be patched based on the branch
+     # 1. Dynamically find all config files containing RKP, DEFEX, KNOX_NCM, etc.
      target_configs=()
-     
+
      if [[ $BRANCH == SM-S938B* || $BRANCH == SM-S931B* || $BRANCH == SM-S936N* ]]; then
          echo "Nothing to see here, moving on..."
-     elif [[ $BRANCH == SM-S926B* ]]; then
-         target_configs=("$COMMON/arch/arm64/configs/s5e9945-bazel_defconfig")
-     elif [[ $BRANCH == SM-A556* ]]; then
-         target_configs=("$COMMON/arch/arm64/configs/s5e8845-bazel_defconfig")
-     elif [[ $BRANCH == SM-A566* ]]; then
-         target_configs=("$CONFIG/exynos/device/mx/mx8855/arch/arm64/configs/s5e8855-bazel_defconfig"
-         "$CONFIG/exynos/soc-series/s-android15/arch/arm64/configs/base_kernel_user.fragment"
-         )
-         sed -i 's/^CONFIG_FIVE_GKI_10=y/#CONFIG_FIVE_GKI_10 is not set/' "$CONFIG/exynos/device/mx/mx8855/arch/arm64/configs/s5e8855-bazel_defconfig"
-         sed -i 's/^CONFIG_FIVE_GKI_10=y/#CONFIG_FIVE_GKI_10 is not set/' "$CONFIG/exynos/soc-series/s-android15/arch/arm64/configs/base_kernel_user.fragment"
-     elif [[ $BRANCH == SM-A055* || $BRANCH == SM-A146P* ]]; then
-         target_configs=("$CONFIG/kernel/kernel_device_modules-6.6/arch/arm64/configs/mediatek-bazel_defconfig")
-     elif [[ $BRANCH == SM-A075* ]]; then
-         target_configs=("$COMMON/arch/arm64/configs/a07_00_defconfig")
      else
-         target_configs=("$GKI_DEFCONFIG")
+         # Add any other Samsung security config names inside the parentheses separated by |
+         PATTERNS="CONFIG_(RKP|DEFEX|KNOX_NCM|PROCA|FIVE|UH|KDP)"
+
+         mapfile -t target_configs < <(
+             grep -rlE "$PATTERNS" \
+                 --exclude-dir={.git,out} \
+                 --include="*defconfig*" \
+                 --include="*.fragment" \
+                 --include="*.config" \
+                 . 2>/dev/null | sort -u
+         )
+
+         # Branch-specific extra patch if needed
+         if [[ $BRANCH == SM-A566* && ${#target_configs[@]} -gt 0 ]]; then
+             sed -i 's/^CONFIG_FIVE_GKI_10=y/# CONFIG_FIVE_GKI_10 is not set/' "${target_configs[@]}"
+         fi
      fi
+
+     # Verify all matched files
+     printf 'Found target config: %s\n' "${target_configs[@]}"
+
      
      # 2. Apply the nuke modifications exactly once if a target file was assigned
      for target_config in "${target_configs[@]}"; do
