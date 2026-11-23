@@ -133,6 +133,7 @@ jobs:
         with:
           flavor: ${{ inputs.root_flavor }}
           commit: ${{ inputs.root_commit }}
+          susfs: ${{ inputs.susfs }}
         
       - name: Add SUSFS
         if: inputs.susfs == 'true'
