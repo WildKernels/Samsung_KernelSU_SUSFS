@@ -55,7 +55,7 @@ on:
 
 jobs:
   build-samsung-gki:
-    name: "${{ inputs.branch }}"
+    name: "${{ inputs.branch }} [${{ inputs.root_flavor }}]"
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false

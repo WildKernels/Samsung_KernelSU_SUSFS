@@ -121,13 +121,18 @@ jobs:
             echo "$1=$2" >> "$GITHUB_OUTPUT"
           }
 
-          # Audited pins. BakaSU is the renamed ReSukiSU project (Baka-SU/BakaSU,
-          # formerly ReSukiSU/ReSukiSU - GitHub redirects, same objects). The
-          # BakaSU pin predates fa12ffd, which dropped fake_state: the gki-*
-          # SUSFS fs patches still reference it, so keep the pin and the SUSFS
-          # branch together.
-          PIN_KERNELSU="e23e035ad168ef13da86970f689dcab062e520de"
-          PIN_BAKASU="833edb0e8e4bc11ac8e976edd7de42da6bdc5bd2"
+          # Audited pins, paired with the SUSFS branch tip this repo clones
+          # (susfs-patches takes simonpunk gki-* at tip, it is not pinned):
+          #  - KernelSU 64833c0: 10_enable_susfs_for_ksu.patch applies cleanly
+          #    and defines the ksu_setup_preinit_file /
+          #    ksu_preinit_handle_post_execveat hooks the current gki-* patch
+          #    calls. The previous 2026-05 pin did not, and the SUSFS hunk now
+          #    fails to apply (kernel/supercall/supercall.c).
+          #  - BakaSU 7b65bde: provides those same hooks in-tree. The previous
+          #    833edb0 pin did not and died at vmlinux link with undefined
+          #    ksu_setup_preinit_file / ksu_preinit_handle_post_execveat.
+          PIN_KERNELSU="64833c005eca6a8dc3d73ec2d37d84c37e0d9ad2"
+          PIN_BAKASU="7b65bde0710b5e7c6f755545cb15a4abd417f3a8"
 
           # KernelSU-Next is deliberately NOT pinned here: it is the only flavor
           # that follows a moving branch tip, and the root-setup action owns that
