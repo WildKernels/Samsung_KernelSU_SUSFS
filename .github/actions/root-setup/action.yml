@@ -162,8 +162,8 @@ runs:
         cd "$CLONE_BASE/$directory"
 
         # Explicitly fetch the branch tracking ref and all tags into the clone
-        #git fetch origin "$repobranch":refs/remotes/origin/"$repobranch" --tags --unshallow 2>/dev/null || \
-        git fetch origin "$repobranch" 2>/dev/null || true
+        git fetch origin "$repobranch":refs/remotes/origin/"$repobranch" --tags --unshallow 2>/dev/null || \
+        git fetch origin "$repobranch":refs/remotes/origin/"$repobranch" --tags 2>/dev/null || true
 
         # Extract and export KSU version info for the PINNED commit, not the
         # branch tip: the pin is what we build, and the tip may have moved on.
