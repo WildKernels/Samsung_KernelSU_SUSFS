@@ -167,9 +167,9 @@ runs:
 
         # Extract and export KSU version info for the PINNED commit, not the
         # branch tip: the pin is what we build, and the tip may have moved on.
-        KSU_GIT_VERSION=$(git rev-list --count "$expected_commit" 2>/dev/null || echo "0")
-        KSU_GIT_TAG=$(git describe --tags --abbrev=0 "$expected_commit" 2>/dev/null || echo "v0.0.1")
-        KSU_SHORT=$(git rev-parse --short=8 "$expected_commit")
+        KSU_GIT_VERSION=$(git rev-list --count "$actual_commit" 2>/dev/null || echo "0")
+        KSU_GIT_TAG=$(git describe --tags --abbrev=0 "$actual_commit" 2>/dev/null || echo "v0.0.1")
+        KSU_SHORT=$(git rev-parse --short=8 "$actual_commit")
         KSU_VERSION=$((30000 + KSU_GIT_VERSION))
 
         cd kernel
