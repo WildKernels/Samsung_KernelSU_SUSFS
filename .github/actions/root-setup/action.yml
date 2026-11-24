@@ -125,13 +125,27 @@ runs:
 
         cd "$directory"
 
-        # Explicitly fetch the branch tracking ref and all tags into the clone
+        # Explicitly fetch the branch tracking ref and all tags into the clone.
+        # --unshallow is required: the checkout above is depth-1, and
+        # rev-list --count on a shallow clone answers 1, baking a KSU_VERSION of
+        # 30001 (30701 for BakaSU) into the kernel.
+        git fetch origin "$commitbranch":refs/remotes/origin/"$commitbranch" --tags --unshallow 2>/dev/null || \
         git fetch origin "$commitbranch":refs/remotes/origin/"$commitbranch" --tags 2>/dev/null || true
 
-        # Extract and export KSU version info for the PINNED commit, not the
-        # branch tip: the pin is what we build, and the tip may have moved on.
-        KSU_GIT_VERSION=$(git rev-list --count "$actual_commit" 2>/dev/null || echo "0")
-        KSU_GIT_TAG=$(git describe --tags --abbrev=0 "$actual_commit" 2>/dev/null || echo "v0.0.1")
+        # Extract and export KSU version info.
+        # - pinned flavors: count the PINNED commit, so the version follows the
+        #   pin rather than whatever the branch tip has moved to.
+        # - pershoot dev-susfs: the code comes from the fork but the version has
+        #   to be counted on upstream dev (commitbranch), because the fork's
+        #   SUSFS commits on top otherwise inflate it past the number the
+        #   KernelSU-Next manager reports (3660 vs 3646 today).
+        version_ref="$actual_commit"
+        if [ "$commitbranch" != "$repobranch" ] && \
+           git rev-parse --verify -q "refs/remotes/origin/$commitbranch" >/dev/null; then
+          version_ref="refs/remotes/origin/$commitbranch"
+        fi
+        KSU_GIT_VERSION=$(git rev-list --count "$version_ref" 2>/dev/null || echo "0")
+        KSU_GIT_TAG=$(git describe --tags --abbrev=0 "$version_ref" 2>/dev/null || echo "v0.0.1")
         KSU_SHORT=$(git rev-parse --short=8 "$actual_commit")
         KSU_VERSION=$((30000 + KSU_GIT_VERSION))
 
