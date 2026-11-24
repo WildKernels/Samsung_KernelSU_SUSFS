@@ -48,7 +48,7 @@ runs:
             ;;
           bakasu)
             repo="https://github.com/Baka-SU/BakaSU.git"
-            directory="BakaSU"
+            directory="KernelSU"
             manager="BakaSU Manager"
             repobranch="main"
             commitbranch="main"
