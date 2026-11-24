@@ -67,7 +67,7 @@ runs:
           fi
         done
 
-        drivers_dir="$KROOT/drivers"
+        drivers_dir="$COMMON/drivers"
         if [ ! -d "$drivers_dir" ]; then
           echo "Kernel drivers directory not found at $drivers_dir" >&2
           exit 1
@@ -84,7 +84,7 @@ runs:
 
         cd "$COMMON"
         curl -LSs "$setup_url" | bash -s "$repobranch"
-        actual_commit="$(git -C "$COMMON/$directory" rev-parse HEAD)"
+        actual_commit="$(git -C "$directory" rev-parse HEAD)"
         
         if [ ! -f "$COMMON/$directory/kernel/Kconfig" ] || [ ! -f "$COMMON/$directory/kernel/Makefile" ]; then
           echo "Selected root checkout does not contain a kernel integration." >&2
@@ -93,11 +93,11 @@ runs:
         
         # Read the version before the flavor guards below touch the tree, so
         # the recorded version is not reported as -dirty.
-        root_version="$(git -C "$COMMON/$directory" describe --tags --always --dirty)"
+        root_version="$(git -C "$directory" describe --tags --always --dirty)"
         # BakaSU + Bazel sandbox fix: bypass the .git submodule check (sandbox
         # has no .git, and the checkout is detached).
         if [ "$flavor" = "bakasu" ]; then
-          kbuild="$COMMON/$directory/kernel/Kbuild"
+          kbuild="$directory/kernel/Kbuild"
           if grep -q "LOCAL_GIT_EXISTS" "$kbuild"; then
             sed -i 's/^LOCAL_GIT_EXISTS.*/LOCAL_GIT_EXISTS := 1/' "$kbuild"
             echo "Patched BakaSU Kbuild for Bazel sandbox (LOCAL_GIT_EXISTS=1)"
@@ -112,27 +112,20 @@ runs:
           # $(error "Please wait susfs update.") that fires on every
           # CONFIG_KSU_SUSFS=y build. The compat probes above it are what
           # matter; strip the hard stop when a pin carries it.
-          compat="$COMMON/$directory/kernel/tools/susfs_compat.mk"
+          compat="$directory/kernel/tools/susfs_compat.mk"
           if [ -f "$compat" ] && grep -q 'Please wait susfs update' "$compat"; then
             sed -i '/susfs has NOT update with latest KernelSU source/,$d' "$compat"
             echo "Stripped susfs_compat hard stop from $compat"
           fi
         fi
-        relative_kernel="$(realpath --relative-to="$drivers_dir" "$COMMON/$directory/kernel" 2>/dev/null || echo "$COMMON/$directory/kernel")"
-        ln -s "$relative_kernel" "$drivers_dir/kernelsu"
-        grep -q 'obj-$(CONFIG_KSU) += kernelsu/' "$drivers_dir/Makefile" || printf '\nobj-$(CONFIG_KSU) += kernelsu/\n' >> "$drivers_dir/Makefile"
-        grep -q 'source "drivers/kernelsu/Kconfig"' "$drivers_dir/Kconfig" || sed -i '/endmenu/i source "drivers/kernelsu/Kconfig"' "$drivers_dir/Kconfig"
-        ln -sf "$COMMON/$directory" "$COMMON/KernelSU-Next" 2>/dev/null || true
         echo "ROOT_IMPLEMENTATION=$flavor" >> "$GITHUB_ENV"
         echo "ROOT_MANAGER=$manager" >> "$GITHUB_ENV"
-        echo "ROOT_VERSION=$root_version" >> "$GITHUB_ENV"
         echo "ROOT_COMMIT=$actual_commit" >> "$GITHUB_ENV"
         echo "ROOT_DIR=$COMMON/$directory" >> "$GITHUB_ENV"
 
-        cd "$COMMON/$directory"
+        cd "$directory"
 
         # Explicitly fetch the branch tracking ref and all tags into the clone
-        git fetch origin "$commitbranch":refs/remotes/origin/"$commitbranch" --tags --unshallow 2>/dev/null || \
         git fetch origin "$commitbranch":refs/remotes/origin/"$commitbranch" --tags 2>/dev/null || true
 
         # Extract and export KSU version info for the PINNED commit, not the
