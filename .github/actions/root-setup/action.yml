@@ -84,7 +84,7 @@ runs:
 
         cd "$COMMON"
         curl -LSs "$setup_url" | bash -s "$repobranch"
-        actual_commit="$(git -C "$directory" rev-parse HEAD)"
+        actual_commit="$(git -C "$directory" rev-parse "refs/remotes/origin/$commitbranch")"
         
         if [ ! -f "$COMMON/$directory/kernel/Kconfig" ] || [ ! -f "$COMMON/$directory/kernel/Makefile" ]; then
           echo "Selected root checkout does not contain a kernel integration." >&2
