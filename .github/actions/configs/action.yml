@@ -42,6 +42,8 @@ runs:
          target_configs=("$CONFIG/kernel/kernel_device_modules-6.1/arch/arm64/configs/mediatek-bazel_defconfig")
      elif [[ $BRANCH == SM-A075* ]]; then
          target_configs=("$COMMON/arch/arm64/configs/a07_00_defconfig")
+     elif [[ $BRANCH == SM-A155* ]]; then
+         target_configs=("$COMMON/arch/arm64/configs/a15_00_defconfig")
      else
          target_configs=("$GKI_DEFCONFIG")
      fi
