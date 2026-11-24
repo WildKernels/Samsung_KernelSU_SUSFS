@@ -9,7 +9,7 @@ runs:
      run: |
       cd "$COMMON"
       patch -p1 < "$KERNEL_PATCHES/common/ntsync/ntsync_base.patch"
-      if [[ $BRANCH == SM-X800-Oneui6.1.1 ]]; then
+      if [[ $BRANCH == SM-X800-Oneui6.1.1 || $BRANCH == SM-A155M-Oneui6.1 ]]; then
        patch -p1 < "$KERNEL_PATCHES/common/ntsync/ntsync_compat_$ANDROID_VER-${KERNEL_VER}_A14.patch"
       else
        patch -p1 < "$KERNEL_PATCHES/common/ntsync/ntsync_compat_$ANDROID_VER-$KERNEL_VER.patch"
