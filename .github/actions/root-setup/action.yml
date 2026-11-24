@@ -31,6 +31,7 @@ runs:
             manager="KernelSU Manager"
             repobranch="main"
             commitbranch="main"
+            setup_url="https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh"
             ;;
           next)
             repo="https://github.com/pershoot/KernelSU-Next.git"
@@ -43,6 +44,7 @@ runs:
              repobranch="dev"
              commitbranch="dev"
             fi
+            setup_url="https://raw.githubusercontent.com/pershoot/KernelSU-Next/dev-susfs/kernel/setup.sh"
             ;;
           bakasu)
             repo="https://github.com/Baka-SU/BakaSU.git"
@@ -50,6 +52,7 @@ runs:
             manager="BakaSU Manager"
             repobranch="main"
             commitbranch="main"
+            setup_url="https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh"
             ;;
           *)
             echo "Unsupported root flavor: $flavor" >&2
@@ -57,44 +60,8 @@ runs:
             ;;
         esac
 
-        # No pin supplied: build the tip of the flavor branch, then work against
-        # that exact SHA for the rest of the run.
-        if [ -z "$expected_commit" ]; then
-          expected_commit="$(git ls-remote "$repo" "refs/heads/$commitbranch" | cut -f1)"
-          if [ -z "$expected_commit" ]; then
-            echo "Cannot resolve tip of $repo $commitbranch" >&2
-            exit 1
-          fi
-          echo "No pin for $flavor; resolved $commitbranch tip $expected_commit"
-        fi
-
-        if ! [[ "$expected_commit" =~ ^[0-9a-f]{40}$ ]]; then
-          echo "Root commit must be a full 40-character SHA." >&2
-          exit 2
-        fi
-
-        if [ -n "${COMMON:-}" ] && [ -d "$COMMON" ]; then
-          KROOT="$COMMON"
-          CLONE_BASE="$CONFIG"
-        elif [ -n "${CONFIG:-}" ] && [ -d "$CONFIG" ]; then
-          if [ -d "$CONFIG/kernel_platform/common" ]; then KROOT="$CONFIG/kernel_platform/common"
-          elif [ -d "$CONFIG/common" ]; then KROOT="$CONFIG/common"
-          elif [ -d "$CONFIG/kernel-6.6" ]; then KROOT="$CONFIG/kernel-6.6"
-          elif [ -d "$CONFIG/kernel-6.1" ]; then KROOT="$CONFIG/kernel-6.1"
-          elif [ -d "$CONFIG/kernel-5.10" ]; then KROOT="$CONFIG/kernel-5.10"
-          elif [ -d "$CONFIG/kernel" ]; then KROOT="$CONFIG/kernel"
-          else KROOT="$CONFIG"
-          fi
-          CLONE_BASE="$CONFIG"
-        else
-          echo "Cannot resolve kernel root (COMMON/CONFIG not set)." >&2
-          exit 1
-        fi
-
-        echo "KROOT=$KROOT CLONE_BASE=$CLONE_BASE flavor=$flavor"
-
         for candidate in KernelSU KernelSU-Next BakaSU; do
-          if [ "$candidate" != "$directory" ] && [ -e "$CLONE_BASE/$candidate" ]; then
+          if [ "$candidate" != "$directory" ] && [ -e "$COMMON/$candidate" ]; then
             echo "Refusing mixed root implementations: found $candidate." >&2
             exit 1
           fi
@@ -110,30 +77,27 @@ runs:
           echo "Refusing to replace an existing kernelsu integration." >&2
           exit 1
         fi
-        if [ -e "$CLONE_BASE/$directory" ]; then
+        if [ -e "$COMMON/$directory" ]; then
           echo "Refusing to reuse an existing root checkout: $directory." >&2
           exit 1
         fi
 
-        git clone --no-checkout "$repo" "$CLONE_BASE/$directory"
-        git -C "$CLONE_BASE/$directory" fetch --depth=1 origin "$expected_commit"
-        git -C "$CLONE_BASE/$directory" checkout --detach "$expected_commit"
-        actual_commit="$(git -C "$CLONE_BASE/$directory" rev-parse HEAD)"
-        if [ "$actual_commit" != "$expected_commit" ]; then
-          echo "Root commit mismatch: expected $expected_commit, got $actual_commit." >&2
-          exit 1
-        fi
-        if [ ! -f "$CLONE_BASE/$directory/kernel/Kconfig" ] || [ ! -f "$CLONE_BASE/$directory/kernel/Makefile" ]; then
+        cd "$COMMON"
+        curl -LSs "$setup_url" | bash -s "$repobranch"
+        actual_commit="$(git -C "$COMMON/$directory" rev-parse HEAD)"
+        
+        if [ ! -f "$COMMON/$directory/kernel/Kconfig" ] || [ ! -f "$COMMON/$directory/kernel/Makefile" ]; then
           echo "Selected root checkout does not contain a kernel integration." >&2
           exit 1
         fi
+        
         # Read the version before the flavor guards below touch the tree, so
         # the recorded version is not reported as -dirty.
-        root_version="$(git -C "$CLONE_BASE/$directory" describe --tags --always --dirty)"
+        root_version="$(git -C "$COMMON/$directory" describe --tags --always --dirty)"
         # BakaSU + Bazel sandbox fix: bypass the .git submodule check (sandbox
         # has no .git, and the checkout is detached).
         if [ "$flavor" = "bakasu" ]; then
-          kbuild="$CLONE_BASE/$directory/kernel/Kbuild"
+          kbuild="$COMMON/$directory/kernel/Kbuild"
           if grep -q "LOCAL_GIT_EXISTS" "$kbuild"; then
             sed -i 's/^LOCAL_GIT_EXISTS.*/LOCAL_GIT_EXISTS := 1/' "$kbuild"
             echo "Patched BakaSU Kbuild for Bazel sandbox (LOCAL_GIT_EXISTS=1)"
@@ -148,24 +112,24 @@ runs:
           # $(error "Please wait susfs update.") that fires on every
           # CONFIG_KSU_SUSFS=y build. The compat probes above it are what
           # matter; strip the hard stop when a pin carries it.
-          compat="$CLONE_BASE/$directory/kernel/tools/susfs_compat.mk"
+          compat="$COMMON/$directory/kernel/tools/susfs_compat.mk"
           if [ -f "$compat" ] && grep -q 'Please wait susfs update' "$compat"; then
             sed -i '/susfs has NOT update with latest KernelSU source/,$d' "$compat"
             echo "Stripped susfs_compat hard stop from $compat"
           fi
         fi
-        relative_kernel="$(realpath --relative-to="$drivers_dir" "$CLONE_BASE/$directory/kernel" 2>/dev/null || echo "$CLONE_BASE/$directory/kernel")"
+        relative_kernel="$(realpath --relative-to="$drivers_dir" "$COMMON/$directory/kernel" 2>/dev/null || echo "$COMMON/$directory/kernel")"
         ln -s "$relative_kernel" "$drivers_dir/kernelsu"
         grep -q 'obj-$(CONFIG_KSU) += kernelsu/' "$drivers_dir/Makefile" || printf '\nobj-$(CONFIG_KSU) += kernelsu/\n' >> "$drivers_dir/Makefile"
         grep -q 'source "drivers/kernelsu/Kconfig"' "$drivers_dir/Kconfig" || sed -i '/endmenu/i source "drivers/kernelsu/Kconfig"' "$drivers_dir/Kconfig"
-        ln -sf "$CLONE_BASE/$directory" "$COMMON/KernelSU-Next" 2>/dev/null || true
+        ln -sf "$COMMON/$directory" "$COMMON/KernelSU-Next" 2>/dev/null || true
         echo "ROOT_IMPLEMENTATION=$flavor" >> "$GITHUB_ENV"
         echo "ROOT_MANAGER=$manager" >> "$GITHUB_ENV"
         echo "ROOT_VERSION=$root_version" >> "$GITHUB_ENV"
         echo "ROOT_COMMIT=$actual_commit" >> "$GITHUB_ENV"
-        echo "ROOT_DIR=$CLONE_BASE/$directory" >> "$GITHUB_ENV"
+        echo "ROOT_DIR=$COMMON/$directory" >> "$GITHUB_ENV"
 
-        cd "$CLONE_BASE/$directory"
+        cd "$COMMON/$directory"
 
         # Explicitly fetch the branch tracking ref and all tags into the clone
         git fetch origin "$commitbranch":refs/remotes/origin/"$commitbranch" --tags --unshallow 2>/dev/null || \
