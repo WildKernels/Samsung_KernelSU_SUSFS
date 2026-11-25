@@ -35,6 +35,7 @@ on:
           - KernelSU-Next
           - KernelSU
           - BakaSU
+          - SukiSU-Nova
           - All
           - none
         default: KernelSU-Next
@@ -147,7 +148,7 @@ jobs:
       fail-fast: false
       matrix:
         # One run per selected root implementation; `All` fans out over all three.
-        flavor: ${{ fromJSON(inputs.root_flavor == 'All' && '["next","kernelsu","bakasu"]' || inputs.root_flavor == 'KernelSU-Next' && '["next"]' || inputs.root_flavor == 'KernelSU' && '["kernelsu"]' || inputs.root_flavor == 'BakaSU' && '["bakasu"]' || '["none"]') }}
+        flavor: ${{ fromJSON(inputs.root_flavor == 'All' && '["next","kernelsu","bakasu","sukisu-nova]' || inputs.root_flavor == 'KernelSU-Next' && '["next"]' || inputs.root_flavor == 'KernelSU' && '["kernelsu"]' || inputs.root_flavor == 'BakaSU' && '["bakasu"]' || inputs.root_flavor == 'SukiSU-Nova' && '["sukisu-nova"]' || '["none"]') }}
     uses: ./.github/workflows/kernel-samsung.yml
     secrets: inherit
     with:
