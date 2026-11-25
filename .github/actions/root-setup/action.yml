@@ -61,7 +61,7 @@ runs:
              repobranch="main"
              commitbranch="main"
             fi
-            setup_url="https://git.zako.shirkneko.top:20004/shirkneko/SukiSU/raw/branch/main/kernel/setup.sh"
+            setup_url="https://raw.githubusercontent.com/SukiSU-Nova/SukiSU-Nova/main/kernel/setup.sh"
             ;;
           *)
             echo "Unsupported root flavor: $flavor" >&2
