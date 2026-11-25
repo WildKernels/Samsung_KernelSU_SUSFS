@@ -52,7 +52,7 @@ runs:
             setup_url="https://raw.githubusercontent.com/Baka-SU/BakaSU/main/kernel/setup.sh"
             ;;
           sukisu-nova)
-            directory="KernelSU"
+            directory="SukiSU-Nova"
             manager="SukiSU-Nova Manager"
             if [[ ${{ inputs.susfs }} == 'true' ]]; then
              repobranch="builtin"
