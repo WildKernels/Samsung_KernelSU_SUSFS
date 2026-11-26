@@ -2,128 +2,102 @@
 
 # 🔥 Wild Kernels for Samsung
 
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue.svg)](LICENSE)
+[![Third-Party Notices](https://img.shields.io/badge/notices-THIRD__PARTY_NOTICES-lightgrey.svg)](https://github.com/WildKernels/GKI_KernelSU_SUSFS/blob/main/THIRD_PARTY_NOTICES.md)
 [![KernelSU](https://img.shields.io/badge/KernelSU-Supported-green)](https://kernelsu.org/)
 [![SUSFS](https://img.shields.io/badge/SUSFS-Integrated-orange)](https://gitlab.com/simonpunk/susfs4ksu)
 
 </div>
-<div align="center">
-## ⚠️ Your warranty is no longer valid!
 
-I am **not responsible** for bricked devices, damaged hardware, or any issues that arise from using this kernel.
-
-**Please** do thorough research and fully understand the features included in this kernel before flashing it!
-
-By flashing this kernel, **YOU** are choosing to make these modifications. If something goes wrong, **do not blame me**!
+> [!CAUTION]
+> Wild Kernels is not responsible for bricked devices or damage. By flashing, you assume all risk. Back up your data and understand the risks before flashing.
 
 ---
 
-### 🚨 Proceed at your own risk!
+## About
+
+Samsung kernels built on Samsung's open sources from [opensource.samsung.com/main](https://opensource.samsung.com/main), mirrored at [WildKernels/Samsung_Kernels](https://github.com/WildKernels/Samsung_Kernels), with KernelSU and SUSFS for root hiding and detection evasion — per-model branches (OneUI) built from Samsung manifests. Now with multiple root-implementation flavors.
 
 ---
 
-## 🔧 Available Kernels
+## Features
 
-| Kernel | Repository | Status |
-|--------|------------|--------|
-| 🏗️ **GKI** | [GKI_KernelSU_SUSFS](https://github.com/WildKernels/GKI_KernelSU_SUSFS) | ✅ Active |
-| 👑 **Sultan** | [Sultan_KernelSU_SUSFS](https://github.com/WildKernels/Sultan_KernelSU_SUSFS) | ✅ Active |
-| 📱 **OnePlus** | [OnePlus_KernelSU_SUSFS](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS) | ✅ Active |
-| 📱 **Samsung** | [Samsung_KernelSU_SUSFS](https://github.com/WildKernels/Samsung_KernelSU_SUSFS) | ✅ Active |
+- **KernelSU / KernelSU-Next / ReSukiSU** — root implementations
+- **susfs4ksu** — root hiding (incl. Ptrace Leak Fix, Unicode Fix)
+- **NoMount / Mountify** — mount metamodules
+- **Baseband Guard** — partition protection
+- **Networking** — BBR, IPSet
+- **TMPFS** — xattr / POSIX ACLs
+- **Performance** — incl. NTSync
+- **DroidSpaces** — container runtime
 
----
-
-## 🔗 Additional Resources
-
-- 🩹 [Kernel Patches](https://github.com/WildKernels/kernel_patches)
-- ⚡ [Kernel Flasher](https://github.com/fatalcoder524/KernelFlasher)
+> [!TIP]
+> Full documentation: [docs/features.md](https://github.com/WildKernels/GKI_KernelSU_SUSFS/blob/main/docs/features.md)
 
 ---
 
-## 📋 Installation Instructions
+## Installation
 
-For GKI installation, please follow the official guide:
-
-📖 **[KernelSU Installation Guide](https://kernelsu.org/guide/installation.html)**
+See **[Installation Guide](https://github.com/WildKernels/GKI_KernelSU_SUSFS/blob/main/docs/installation.md)**.
 
 ---
 
-## ✨ Features
+## Supported Devices
 
-- 🔐 **KernelSU**: A root solution for Android GKI devices that works in kernel mode and grants root permission to userspace applications directly in kernel space
-- 🛡️ **SUSFS**: An addon root hiding kernel patches and userspace module for KernelSU
-
----
-
-| 🔧 **Project** | 👨‍💻 **Developer** | 🔗 **Link** |
-|:---------------:|:----------------:|:-----------:|
-| **KernelSU** | tiann | [![GitHub](https://img.shields.io/badge/GitHub-tiann-blue?style=flat-square&logo=github)](https://github.com/tiann/KernelSU) |
-| **KernelSU-Next** | rifsxd | [![GitHub](https://img.shields.io/badge/GitHub-rifsxd-blue?style=flat-square&logo=github)](https://github.com/KernelSU-Next/KernelSU-Next) |
-| **Magic-KSU** | 5ec1cff | [![GitHub](https://img.shields.io/badge/GitHub-5ec1cff-blue?style=flat-square&logo=github)](https://github.com/5ec1cff/KernelSU) |
-| **SUSFS** | simonpunk | [![GitLab](https://img.shields.io/badge/GitLab-simonpunk-orange?style=flat-square&logo=gitlab)](https://gitlab.com/simonpunk/susfs4ksu.git) |
-| **SUSFS Module** | sidex15 | [![GitHub](https://img.shields.io/badge/GitHub-sidex15-blue?style=flat-square&logo=github)](https://github.com/sidex15) |
-| **Sultan Kernels** | kerneltoast | [![GitHub](https://img.shields.io/badge/GitHub-kerneltoast-blue?style=flat-square&logo=github)](https://github.com/kerneltoast) |
-
-🙏 Special thanks to the open-source community for their contributions!
+Samsung branches are per model + OneUI version (e.g. `SM-S938B-Oneui8.5`, `SM-S928B-Oneui7`). See the matrix in [`.github/workflows/kernel-samsung.yml`](.github/workflows/kernel-samsung.yml) for the full list.
 
 ---
 
-## 💬 Support
+## Our Projects
 
-If you encounter any issues or need help, feel free to:
-- 🐛 Open an issue in this repository
-- 💬 Reach out to me directly
+| Device | Repository | Description |
+|--------|------------|-------------|
+| **Multi** | [GKI_KernelSU_SUSFS](https://github.com/WildKernels/GKI_KernelSU_SUSFS) | Google GKI sources — built to be generic and work across many devices |
+| **Pixel** | [Sultan_KernelSU_SUSFS](https://github.com/WildKernels/Sultan_KernelSU_SUSFS) | Custom kernels for specific Pixel devices — built from Sultan sources |
+| **Samsung** | [Samsung_KernelSU_SUSFS](https://github.com/WildKernels/Samsung_KernelSU_SUSFS) | Built from Samsung sources and manifest |
+| **OnePlus** | [OnePlus_KernelSU_SUSFS](https://github.com/WildKernels/OnePlus_KernelSU_SUSFS) | Built from OnePlus sources and manifest |
+
+---
+
+## Special Thanks
+
+**These amazing people and projects make this possible:**
+- **KernelSU** — [tiann](https://github.com/tiann/KernelSU)
+- **KernelSU-Next** — [rifsxd](https://github.com/KernelSU-Next/KernelSU-Next)
+- **KernelSU-Next SUSFS Fork** — [pershoot](https://github.com/pershoot/KernelSU-Next)
+- **SUSFS** — [simonpunk](https://gitlab.com/simonpunk/susfs4ksu)
+- **NoMount** — [maxsteeel](https://github.com/maxsteeel/nomount)
+- **DroidSpaces-OSS** — [ravindu644](https://github.com/ravindu644/Droidspaces-OSS)
+- **Baseband-guard (BBG)** — [vc-teahouse](https://github.com/vc-teahouse/Baseband-guard)
+- **Kernel Patches** — [WildKernels/kernel_patches](https://github.com/WildKernels/kernel_patches)
+- **AnyKernel3** — [osm0sis](https://github.com/osm0sis/AnyKernel3)
+
+**Contributors to this repository:**
+[![Contributors](https://contrib.rocks/image?repo=WildKernels/Samsung_KernelSU_SUSFS)](https://github.com/WildKernels/Samsung_KernelSU_SUSFS/graphs/contributors)
+Have an idea or improvement in mind? Contributions are always welcome — feel free to open a pull request or share your thoughts!
 
 ---
 
-## ⚠️ Disclaimer
-
-Flashing this kernel will void your warranty, and there is always a risk of bricking your device. Please make sure to:
-- 💾 Back up your data
-- 🧠 Understand the risks before proceeding
-
-**🚨 Proceed at your own risk!**
-
----
+## Community
 
 <div align="center">
 
-## 📱 Connect With Us
-
-[![Telegram](https://img.shields.io/badge/Telegram-Jimsterino98-blue?logo=telegram)](https://t.me/Ngadhnjim98)
-[![Telegram Group](https://img.shields.io/badge/Telegram-Wild__Kernels-blue?logo=telegram)](https://t.me/WildKernelsTG)
+[![Telegram Group](https://img.shields.io/badge/Telegram-%40WildKernelsTG-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/WildKernelsTG)
+[![Telegram DM](https://img.shields.io/badge/Telegram-%40Jimsterino98-26A5E4?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/Jimsterino98)
 
 </div>
 
----
-
-## 🌟 Special Thanks
-
-**These amazing people help make this project possible! ❤️**
-
-| Contributor | Contribution |
-|-------------|-------------|
-| 🛡️ [simonpunk](https://gitlab.com/simonpunk/susfs4ksu.git) | Created SUSFS! |
-| 📦 [sidex15](https://github.com/sidex15) | Created module! |
-| 🩹 [backslashxx](https://github.com/backslashxx) | Helped with patches! |
-| 🔧 [Teemo](https://github.com/liqideqq) | Helped with patches! |
-| 💝 [幕落](https://github.com/MuLuo688) | Donation! |
-| 🛡️ [vc-teahouse](https://github.com/vc-teahouse) | Created Baseband-guard (BBG)! |
-
-*If you have contributed and are not listed here, please remind me!* 🙏
+Need help? Open an issue in this repository or reach out on Telegram. Please ask in the [WildKernelsTG group](https://t.me/WildKernelsTG) first for general issues.
 
 ---
-<div align="center">
-## 💝 Donations
 
-Any and all donations are appreciated!
+## Donations
 
-PayPal: [paypal.me/NgadhnjimHoxha](paypal.me/NgadhnjimHoxha)
+> [!IMPORTANT]
+> **Kind note:** A donation is truly just a gift — not a payment for support, features, or priority. It doesn't unlock anything extra on our side and doesn't change how we help you; everyone gets the same community support whether you donate or not. Think of it as a kind “thank you” to help keep development going — not a transaction. If you do choose to give, we're genuinely grateful, but please never feel obligated.
 
-Wise: [wise.com/pay/me/ngadhnjimh](wise.com/pay/me/ngadhnjimh)
-
-Ko-fi: [https://ko-fi.com/jimsterino98](https://ko-fi.com/jimsterino98)
-
-Buy me a coffee: [buymeacoffee.com/jimsterino98](buymeacoffee.com/jimsterino98)
-
-DM on telegram for crypto donations!
-
+- PayPal: [paypal.me/NgadhnjimHoxha](paypal.me/NgadhnjimHoxha)
+- Wise: [wise.com/pay/me/ngadhnjimh](wise.com/pay/me/ngadhnjimh)
+- Ko-fi: [https://ko-fi.com/jimsterino98](https://ko-fi.com/jimsterino98)
+- Buy me a coffee: [buymeacoffee.com/jimsterino98](buymeacoffee.com/jimsterino98)
+- Crypto: DM on Telegram for crypto donations!
